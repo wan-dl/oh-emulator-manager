@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "OH Emulator Manager",
+    "version": "Version"
+  },
+  "tabs": {
+    "ios": "iOS Emulators",
+    "android": "Android Emulators",
+    "harmony": "HarmonyOS Emulators"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "search": "Search emulators",
+    "start": "Start",
+    "stop": "Stop",
+    "delete": "Delete",
+    "wipeData": "Wipe Data",
+    "screenshot": "Screenshot",
+    "viewLogs": "View Logs",
+    "copyId": "Copy ID",
+    "more": "More",
+    "settings": "Settings"
+  },
+  "status": {
+    "running": "Running",
+    "stopped": "Stopped"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "paths": "Paths",
+    "language": "Language",
+    "theme": "Theme",
+    "autoStart": "Auto Start",
+    "minimizeToTray": "Minimize to Tray",
+    "closeToMinimize": "Close to Minimize",
+    "androidHome": "Android SDK Path",
+    "devecoHome": "DevEco Studio Path",
+    "selectFolder": "Select Folder",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "messages": {
+    "startSuccess": "Started successfully",
+    "stopSuccess": "Stopped successfully",
+    "deleteSuccess": "Deleted successfully",
+    "wipeDataSuccess": "Data wiped successfully",
+    "screenshotSuccess": "Screenshot saved",
+    "copySuccess": "Copied to clipboard",
+    "settingsSaved": "Settings saved",
+    "error": "Operation failed"
+  }
+}

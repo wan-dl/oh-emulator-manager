@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "OH 模拟器管理器",
+    "version": "版本"
+  },
+  "tabs": {
+    "ios": "iOS 模拟器",
+    "android": "Android 模拟器",
+    "harmony": "HarmonyOS 模拟器"
+  },
+  "actions": {
+    "refresh": "刷新",
+    "search": "搜索模拟器",
+    "settings": "设置",
+    "start": "启动",
+    "stop": "关闭",
+    "delete": "删除",
+    "wipeData": "清除数据",
+    "screenshot": "截图",
+    "viewLogs": "查看日志",
+    "copyId": "复制 ID",
+    "more": "更多"
+  },
+  "status": {
+    "running": "运行中",
+    "stopped": "已停止"
+  },
+  "settings": {
+    "title": "设置",
+    "general": "通用设置",
+    "paths": "路径配置",
+    "language": "界面语言",
+    "theme": "主题模式",
+    "autoStart": "开机自启",
+    "minimizeToTray": "最小化到托盘",
+    "closeToMinimize": "关闭时最小化",
+    "androidHome": "Android SDK 路径",
+    "devecoHome": "DevEco Studio 路径",
+    "selectFolder": "选择文件夹",
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  },
+  "messages": {
+    "startSuccess": "启动成功",
+    "stopSuccess": "关闭成功",
+    "deleteSuccess": "删除成功",
+    "wipeDataSuccess": "清除数据成功",
+    "screenshotSuccess": "截图已保存",
+    "copySuccess": "已复制到剪贴板",
+    "settingsSaved": "设置已保存",
+    "error": "操作失败"
+  }
+}
