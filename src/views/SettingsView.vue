@@ -26,18 +26,28 @@
         <div v-if="activeTab === 'general'" class="tab-content">
           <n-form label-placement="left" label-width="120">
             <n-form-item :label="t('settings.language')">
-              <n-select
-                v-model:value="settingsStore.language"
-                :options="languageOptions"
-                @update:value="handleAutoSave"
-              />
+              <div class="button-group">
+                <button
+                  v-for="option in languageOptions"
+                  :key="option.value"
+                  :class="['option-button', { active: settingsStore.language === option.value }]"
+                  @click="settingsStore.language = option.value; handleAutoSave()"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
             </n-form-item>
             <n-form-item :label="t('settings.theme')">
-              <n-select
-                v-model:value="settingsStore.theme"
-                :options="themeOptions"
-                @update:value="handleAutoSave"
-              />
+              <div class="button-group">
+                <button
+                  v-for="option in themeOptions"
+                  :key="option.value"
+                  :class="['option-button', { active: settingsStore.theme === option.value }]"
+                  @click="settingsStore.theme = option.value; handleAutoSave()"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
             </n-form-item>
             <n-form-item :label="t('settings.autoStart')">
               <n-switch v-model:value="settingsStore.autoStart" @update:value="handleAutoSave" />
@@ -232,14 +242,17 @@ const handleAutoSave = async () => {
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  align-items: center;
 }
 
 .tabs-header {
-  display: flex;
-  gap: 8px;
-  padding: 16px 24px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f0f0f0;
+  border-radius: 24px;
+  margin: 16px auto;
+  align-self: center;
 }
 
 .tab-item {
@@ -250,26 +263,63 @@ const handleAutoSave = async () => {
   color: #666;
   background: transparent;
   font-size: 14px;
+  border: none;
+  white-space: nowrap;
 }
 
-.tab-item:hover {
-  background: #e9ecef;
+.tab-item:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .tab-item.active {
-  background: #007bff;
-  color: white;
+  background: white;
+  color: #18a058;
   font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .content {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  width: 100%;
+  max-width: 800px;
 }
 
 .tab-content {
   max-width: 600px;
+}
+
+.button-group {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f0f0f0;
+  border-radius: 20px;
+}
+
+.option-button {
+  padding: 6px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+  font-size: 14px;
+  white-space: nowrap;
+  outline: none;
+}
+
+.option-button:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.option-button.active {
+  background: white;
+  color: #18a058;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .about-content {
