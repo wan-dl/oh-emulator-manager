@@ -57,16 +57,22 @@ const filteredEmulators = computed(() => {
   padding: 16px;
   overflow-y: auto;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .spin-container {
-  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .empty-container {
-  height: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 300px;
 }
 </style>
