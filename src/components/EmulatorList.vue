@@ -4,18 +4,23 @@
       <div v-if="emulators.length === 0" class="empty-container">
         <n-empty description="暂无模拟器" />
       </div>
-      <emulator-card
-        v-for="emulator in filteredEmulators"
-        :key="emulator.id"
-        :emulator="emulator"
-        @start="$emit('start', $event)"
-        @stop="$emit('stop', $event)"
-        @delete="$emit('delete', $event)"
-        @wipe-data="$emit('wipeData', $event)"
-        @screenshot="$emit('screenshot', $event)"
-        @view-logs="$emit('viewLogs', $event)"
-        @copy-id="$emit('copyId', $event)"
-      />
+      <div v-else class="emulator-items">
+        <emulator-card
+          v-for="(emulator, index) in filteredEmulators"
+          :key="emulator.id"
+          :class="{ 'stripe': index % 2 === 1 }"
+          :emulator="emulator"
+          :is-starting="props.startingEmulators?.has(emulator.id) || false"
+          :is-stopping="props.stoppingEmulators?.has(emulator.id) || false"
+          @start="$emit('start', $event)"
+          @stop="$emit('stop', $event)"
+          @delete="$emit('delete', $event)"
+          @wipe-data="$emit('wipeData', $event)"
+          @screenshot="$emit('screenshot', $event)"
+          @view-logs="$emit('viewLogs', $event)"
+          @copy-id="$emit('copyId', $event)"
+        />
+      </div>
     </n-spin>
   </div>
 </template>
@@ -30,6 +35,8 @@ const props = defineProps<{
   emulators: Emulator[]
   loading?: boolean
   searchText?: string
+  startingEmulators?: Set<string>
+  stoppingEmulators?: Set<string>
 }>()
 
 defineEmits<{
@@ -54,7 +61,6 @@ const filteredEmulators = computed(() => {
 
 <style scoped>
 .emulator-list {
-  padding: 16px;
   overflow-y: auto;
   height: 100%;
   display: flex;
@@ -66,6 +72,18 @@ const filteredEmulators = computed(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.emulator-items {
+  flex: 1;
+}
+
+.emulator-items :deep(.emulator-card.stripe) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.emulator-items :deep(.emulator-card.stripe:hover) {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 .empty-container {

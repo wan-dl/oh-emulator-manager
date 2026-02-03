@@ -132,13 +132,12 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
     let mut child = cmd.spawn()
         .map_err(|e| format!("Failed to start emulator: {}", e))?;
 
-    // Wait a moment to capture any immediate errors
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    // Wait for initial startup and check for immediate errors
+    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
     
-    // Try to get the exit status (non-blocking check)
+    // Check if process crashed immediately
     match child.try_wait() {
         Ok(Some(status)) => {
-            // Process exited, capture error output
             let output = child.wait_with_output()
                 .map_err(|e| format!("Failed to read output: {}", e))?;
             
@@ -157,7 +156,29 @@ pub async fn start_android_emulator(id: String) -> Result<(), String> {
             }
         }
         Ok(None) => {
-            // Process is still running, which is good
+            // Process is running, wait for emulator to be ready
+            for _ in 0..30 { // Wait up to 30 seconds
+                tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                
+                // Check if emulator is ready by listing running emulators
+                let adb_path = std::path::Path::new(&android_home)
+                    .join("platform-tools")
+                    .join(if cfg!(target_os = "windows") { "adb.exe" } else { "adb" });
+                
+                if let Ok(output) = Command::new(&adb_path)
+                    .args(&["devices"])
+                    .output() {
+                    let devices_output = String::from_utf8_lossy(&output.stdout);
+                    if devices_output.contains(&id) || devices_output.lines().any(|line| line.contains("device") && !line.contains("List")) {
+                        break; // Emulator is ready
+                    }
+                }
+                
+                // Check if process is still running
+                if let Ok(Some(_)) = child.try_wait() {
+                    return Err("Emulator process terminated unexpectedly".to_string());
+                }
+            }
         }
         Err(e) => {
             return Err(format!("Failed to check process status: {}", e));
@@ -240,10 +261,23 @@ pub async fn delete_android_emulator(id: String) -> Result<(), String> {
         .join("bin")
         .join(avdmanager_exe);
     
-    Command::new(&avdmanager_path)
+    let output = Command::new(&avdmanager_path)
         .args(&["delete", "avd", "-n", &id])
         .output()
         .map_err(|e| format!("Failed to delete emulator: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let error_msg = if !stderr.is_empty() {
+            stderr.to_string()
+        } else if !stdout.is_empty() {
+            stdout.to_string()
+        } else {
+            format!("Failed to delete AVD: {}", id)
+        };
+        return Err(error_msg);
+    }
 
     Ok(())
 }
@@ -254,20 +288,46 @@ pub async fn wipe_android_data(id: String) -> Result<(), String> {
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
     
-    let emulator_exe = if cfg!(target_os = "windows") {
-        "emulator.exe"
-    } else {
-        "emulator"
-    };
+    // Get AVD directory path
+    let avd_home = std::env::var("ANDROID_AVD_HOME")
+        .or_else(|_| std::env::var("HOME").map(|h| format!("{}/.android/avd", h)))
+        .or_else(|_| std::env::var("USERPROFILE").map(|h| format!("{}/.android/avd", h)))
+        .map_err(|_| "Cannot determine AVD home directory".to_string())?;
     
-    let emulator_path = std::path::Path::new(&android_home)
-        .join("emulator")
-        .join(emulator_exe);
+    let avd_path = std::path::Path::new(&avd_home).join(format!("{}.avd", id));
     
-    Command::new(&emulator_path)
-        .args(&["-avd", &id, "-wipe-data"])
-        .spawn()
-        .map_err(|e| format!("Failed to wipe data: {}", e))?;
+    if !avd_path.exists() {
+        return Err(format!("AVD directory not found: {:?}", avd_path));
+    }
+    
+    // Delete userdata files to wipe data (without starting emulator)
+    let files_to_delete = [
+        "userdata-qemu.img",
+        "userdata-qemu.img.qcow2", 
+        "cache.img",
+        "cache.img.qcow2",
+        "snapshots",
+    ];
+    
+    let mut deleted_count = 0;
+    for file in &files_to_delete {
+        let file_path = avd_path.join(file);
+        if file_path.exists() {
+            if file_path.is_dir() {
+                std::fs::remove_dir_all(&file_path)
+                    .map_err(|e| format!("Failed to delete {}: {}", file, e))?;
+            } else {
+                std::fs::remove_file(&file_path)
+                    .map_err(|e| format!("Failed to delete {}: {}", file, e))?;
+            }
+            deleted_count += 1;
+        }
+    }
+    
+    if deleted_count == 0 {
+        // No user data files found, AVD might be clean already
+        return Ok(());
+    }
 
     Ok(())
 }
@@ -288,29 +348,28 @@ pub async fn screenshot_android(id: String) -> Result<String, String> {
         .join("platform-tools")
         .join(adb_exe);
     
-    let output = Command::new(&adb_path)
-        .args(&["devices"])
-        .output()
-        .map_err(|e| format!("Failed to get devices: {}", e))?;
-
-    let devices = String::from_utf8_lossy(&output.stdout);
+    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("screenshot_{}_{}.png", id, timestamp);
     
-    for line in devices.lines() {
-        if line.contains(&id) {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if let Some(serial) = parts.first() {
-                let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-                let filename = format!("screenshot_{}_{}.png", id, timestamp);
-                
-                Command::new(&adb_path)
-                    .args(&["-s", serial, "exec-out", "screencap", "-p"])
-                    .output()
-                    .map_err(|e| format!("Failed to take screenshot: {}", e))?;
+    // Get screenshot directory from settings
+    let screenshot_dir = crate::commands::settings::get_screenshot_dir()
+        .ok_or_else(|| "Cannot find screenshot directory".to_string())?;
+    let path = std::path::Path::new(&screenshot_dir).join(&filename);
+    
+    // Take screenshot and save to file
+    let output = Command::new(&adb_path)
+        .args(&["-s", &id, "exec-out", "screencap", "-p"])
+        .output()
+        .map_err(|e| format!("Failed to take screenshot: {}", e))?;
 
-                return Ok(filename);
-            }
-        }
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Screenshot failed: {}", stderr));
     }
 
-    Err("Emulator not found".to_string())
+    // Write screenshot data to file
+    std::fs::write(&path, &output.stdout)
+        .map_err(|e| format!("Failed to save screenshot: {}", e))?;
+
+    Ok(path.to_string_lossy().to_string())
 }

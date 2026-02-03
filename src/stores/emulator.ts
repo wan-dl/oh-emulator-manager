@@ -83,15 +83,16 @@ export const useEmulatorStore = defineStore('emulator', () => {
     }
   }
 
-  async function takeScreenshot(id: string) {
+  async function takeScreenshot(id: string): Promise<string> {
     const type = currentType.value
     if (type === 'ios') {
-      await invoke('screenshot_ios', { id })
+      return await invoke('screenshot_ios', { id })
     } else if (type === 'android') {
-      await invoke('screenshot_android', { id })
+      return await invoke('screenshot_android', { id })
     } else if (type === 'harmony') {
-      await invoke('screenshot_harmony', { id })
+      return await invoke('screenshot_harmony', { id })
     }
+    throw new Error('Unknown emulator type')
   }
 
   return {

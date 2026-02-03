@@ -10,9 +10,11 @@
   },
   "actions": {
     "refresh": "Refresh",
-    "search": "Search emulators",
+    "search": "Search Devices...",
     "start": "Start",
+    "starting": "Starting",
     "stop": "Stop",
+    "stopping": "Stopping",
     "delete": "Delete",
     "wipeData": "Wipe Data",
     "screenshot": "Screenshot",
@@ -43,8 +45,17 @@
     "closeToMinimize": "Close to Minimize",
     "androidHome": "Android SDK Path",
     "devecoHome": "DevEco Studio Path",
+    "harmonyImageLocation": "Local Image Location",
+    "harmonyEmulatorLocation": "Local Emulator Location",
+    "harmonyEmulatorPath": "Emulator Path",
+    "harmonyEmulatorPathPlaceholder": "Leave empty to derive from DevEco Studio path",
+    "harmonyHdcPath": "hdc Path",
+    "harmonyHdcPathPlaceholder": "Leave empty to derive from DevEco Studio path",
+    "selectFile": "Select File",
     "xcodeHome": "Xcode Path",
     "selectFolder": "Select Folder",
+    "screenshotDir": "Screenshot Directory",
+    "selectScreenshotDir": "Select Screenshot Directory",
     "save": "Save",
     "cancel": "Cancel"
   },
@@ -59,8 +70,13 @@
     "deleteSuccess": "Deleted successfully",
     "wipeDataSuccess": "Data wiped successfully",
     "screenshotSuccess": "Screenshot saved",
+    "screenshotSaved": "Screenshot saved to: {path}",
     "copySuccess": "Copied to clipboard",
     "settingsSaved": "Settings saved",
     "error": "Operation failed"
+  },
+  "dialogs": {
+    "deleteTitle": "Confirm Delete",
+    "deleteContent": "Are you sure you want to delete emulator '{id}'? This action cannot be undone."
   }
 }

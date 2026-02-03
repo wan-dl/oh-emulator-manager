@@ -10,10 +10,12 @@
   },
   "actions": {
     "refresh": "刷新",
-    "search": "搜索模拟器",
+    "search": "查找设备...",
     "settings": "设置",
     "start": "启动",
+    "starting": "启动中",
     "stop": "关闭",
+    "stopping": "关闭中",
     "delete": "删除",
     "wipeData": "清除数据",
     "screenshot": "截图",
@@ -43,8 +45,17 @@
     "closeToMinimize": "关闭时最小化",
     "androidHome": "Android SDK 路径",
     "devecoHome": "DevEco Studio 路径",
+    "harmonyImageLocation": "Local Image Location",
+    "harmonyEmulatorLocation": "Local Emulator Location",
+    "harmonyEmulatorPath": "Emulator 程序路径",
+    "harmonyEmulatorPathPlaceholder": "留空则从 DevEco Studio 路径拼接",
+    "harmonyHdcPath": "hdc 程序路径",
+    "harmonyHdcPathPlaceholder": "留空则从 DevEco Studio 路径拼接",
+    "selectFile": "选择文件",
     "xcodeHome": "Xcode 路径",
     "selectFolder": "选择文件夹",
+    "screenshotDir": "截图存储目录",
+    "selectScreenshotDir": "选择截图存储目录",
     "save": "保存",
     "cancel": "取消"
   },
@@ -59,8 +70,13 @@
     "deleteSuccess": "删除成功",
     "wipeDataSuccess": "清除数据成功",
     "screenshotSuccess": "截图已保存",
+    "screenshotSaved": "截图已保存到: {path}",
     "copySuccess": "已复制到剪贴板",
     "settingsSaved": "设置已保存",
     "error": "操作失败"
+  },
+  "dialogs": {
+    "deleteTitle": "确认删除",
+    "deleteContent": "确定要删除模拟器 '{id}' 吗？此操作不可恢复。"
   }
 }

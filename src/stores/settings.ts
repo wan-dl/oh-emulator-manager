@@ -10,7 +10,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const closeToMinimize = ref(true)
   const androidHome = ref('')
   const devecoHome = ref('')
+  const harmonyImageLocation = ref('')
+  const harmonyEmulatorLocation = ref('')
+  const harmonyEmulatorPath = ref('')
+  const harmonyHdcPath = ref('')
   const xcodeHome = ref('')
+  const screenshotDir = ref('')
 
   async function loadSettings() {
     try {
@@ -22,7 +27,12 @@ export const useSettingsStore = defineStore('settings', () => {
       closeToMinimize.value = settings.close_to_minimize
       androidHome.value = settings.android_home
       devecoHome.value = settings.deveco_home
+      harmonyImageLocation.value = settings.harmony_image_location
+      harmonyEmulatorLocation.value = settings.harmony_emulator_location
+      harmonyEmulatorPath.value = settings.harmony_emulator_path
+      harmonyHdcPath.value = settings.harmony_hdc_path
       xcodeHome.value = settings.xcode_home
+      screenshotDir.value = settings.screenshot_dir
     } catch (error) {
       console.error('Failed to load settings:', error)
     }
@@ -38,7 +48,12 @@ export const useSettingsStore = defineStore('settings', () => {
         close_to_minimize: closeToMinimize.value,
         android_home: androidHome.value,
         deveco_home: devecoHome.value,
-        xcode_home: xcodeHome.value
+        harmony_image_location: harmonyImageLocation.value,
+        harmony_emulator_location: harmonyEmulatorLocation.value,
+        harmony_emulator_path: harmonyEmulatorPath.value,
+        harmony_hdc_path: harmonyHdcPath.value,
+        xcode_home: xcodeHome.value,
+        screenshot_dir: screenshotDir.value
       }
     })
   }
@@ -51,7 +66,12 @@ export const useSettingsStore = defineStore('settings', () => {
     closeToMinimize,
     androidHome,
     devecoHome,
+    harmonyImageLocation,
+    harmonyEmulatorLocation,
+    harmonyEmulatorPath,
+    harmonyHdcPath,
     xcodeHome,
+    screenshotDir,
     loadSettings,
     saveSettings
   }

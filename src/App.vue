@@ -44,6 +44,17 @@ const dateLocale = computed(() => settingsStore.language === 'zh-CN' ? dateZhCN 
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 允许输入框和可编辑内容选择文本 */
+input,
+textarea,
+[contenteditable="true"],
+.n-input__input-el {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 body {

@@ -10,15 +10,44 @@ pub struct HarmonyEmulator {
     pub status: String,
 }
 
+fn get_emulator_path() -> Result<std::path::PathBuf, String> {
+    let emulator_path = crate::commands::settings::get_harmony_emulator_path()
+        .ok_or_else(|| "Emulator path not configured. Please set DevEco Studio path or Emulator path in Settings.".to_string())?;
+    
+    let path = std::path::PathBuf::from(&emulator_path);
+    
+    if !path.exists() {
+        return Err(format!("Emulator not found at: {:?}. Please check your settings.", path));
+    }
+    
+    Ok(path)
+}
+
+fn get_hdc_path() -> Result<std::path::PathBuf, String> {
+    let hdc_path = crate::commands::settings::get_harmony_hdc_path()
+        .ok_or_else(|| "hdc path not configured. Please set DevEco Studio path or hdc path in Settings.".to_string())?;
+    
+    let path = std::path::PathBuf::from(&hdc_path);
+    
+    if !path.exists() {
+        return Err(format!("hdc not found at: {:?}. Please check your settings.", path));
+    }
+    
+    Ok(path)
+}
+
 #[tauri::command]
 pub async fn list_harmony_emulators() -> Result<Vec<HarmonyEmulator>, String> {
-    let output = Command::new("hdctool")
-        .args(&["list", "targets"])
+    let emulator_path = get_emulator_path()?;
+    
+    let output = Command::new(&emulator_path)
+        .arg("-list")
         .output()
-        .map_err(|e| format!("Failed to execute hdctool command: {}", e))?;
+        .map_err(|e| format!("Failed to execute Emulator command: {}", e))?;
 
     if !output.status.success() {
-        return Err("Failed to list HarmonyOS emulators".to_string());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Failed to list HarmonyOS emulators: {}", stderr));
     }
 
     let device_list = String::from_utf8_lossy(&output.stdout);
@@ -26,14 +55,41 @@ pub async fn list_harmony_emulators() -> Result<Vec<HarmonyEmulator>, String> {
 
     for line in device_list.lines() {
         let line = line.trim();
-        if !line.is_empty() && line.contains("emulator") {
+        if line.is_empty() || line.starts_with("List") || line.starts_with("---") {
+            continue;
+        }
+        
+        // Parse emulator info from the list output
+        // Format may vary, adjust parsing as needed
+        if !line.is_empty() {
+            let name = line.to_string();
             emulators.push(HarmonyEmulator {
-                id: line.to_string(),
-                name: line.to_string(),
+                id: name.clone(),
+                name: name.clone(),
                 device_type: "HarmonyOS Device".to_string(),
                 os_version: "HarmonyOS NEXT".to_string(),
                 status: "stopped".to_string(),
             });
+        }
+    }
+
+    // Check running emulators using hdc
+    if let Ok(hdc_path) = get_hdc_path() {
+        if let Ok(hdc_output) = Command::new(&hdc_path).arg("list").arg("targets").output() {
+            let devices = String::from_utf8_lossy(&hdc_output.stdout);
+            for line in devices.lines() {
+                let line = line.trim();
+                if !line.is_empty() && !line.starts_with("[") {
+                    // Mark matching emulator as running
+                    for emu in &mut emulators {
+                        if line.contains(&emu.name) || emu.name.contains(line) {
+                            emu.status = "running".to_string();
+                            emu.id = line.to_string();
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -42,8 +98,16 @@ pub async fn list_harmony_emulators() -> Result<Vec<HarmonyEmulator>, String> {
 
 #[tauri::command]
 pub async fn start_harmony_emulator(id: String) -> Result<(), String> {
-    Command::new("hdctool")
-        .args(&["start", &id])
+    let emulator_path = get_emulator_path()?;
+    
+    let emulator_location = crate::commands::settings::get_harmony_emulator_location()
+        .ok_or_else(|| "Local Emulator Location not configured. Please set it in Settings.".to_string())?;
+    
+    let image_location = crate::commands::settings::get_harmony_image_location()
+        .ok_or_else(|| "Local Image Location not configured. Please set it in Settings.".to_string())?;
+    
+    Command::new(&emulator_path)
+        .args(&["-hvd", &id, "-path", &emulator_location, "-imageRoot", &image_location])
         .spawn()
         .map_err(|e| format!("Failed to start emulator: {}", e))?;
 
@@ -52,30 +116,58 @@ pub async fn start_harmony_emulator(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn stop_harmony_emulator(id: String) -> Result<(), String> {
-    Command::new("hdctool")
-        .args(&["stop", &id])
+    let hdc_path = get_hdc_path()?;
+    
+    // Use hdc to kill the emulator
+    let output = Command::new(&hdc_path)
+        .args(&["-t", &id, "shell", "reboot", "-p"])
         .output()
         .map_err(|e| format!("Failed to stop emulator: {}", e))?;
+
+    if !output.status.success() {
+        // Try alternative method - kill via emulator command
+        let emulator_path = get_emulator_path()?;
+        Command::new(&emulator_path)
+            .args(&["-kill", &id])
+            .output()
+            .map_err(|e| format!("Failed to stop emulator: {}", e))?;
+    }
 
     Ok(())
 }
 
 #[tauri::command]
 pub async fn screenshot_harmony(id: String) -> Result<String, String> {
+    let hdc_path = get_hdc_path()?;
+    
     let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
     let filename = format!("screenshot_{}_{}.png", id, timestamp);
     let remote_path = "/data/local/tmp/screenshot.png";
-    let local_path = std::env::temp_dir().join(&filename);
+    
+    // Get screenshot directory from settings
+    let screenshot_dir = crate::commands::settings::get_screenshot_dir()
+        .ok_or_else(|| "Cannot find screenshot directory".to_string())?;
+    let local_path = std::path::Path::new(&screenshot_dir).join(&filename);
 
-    Command::new("hdc")
+    let output = Command::new(&hdc_path)
         .args(&["-t", &id, "shell", "snapshot_display", "-f", remote_path])
         .output()
         .map_err(|e| format!("Failed to take screenshot: {}", e))?;
 
-    Command::new("hdc")
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Screenshot failed: {}", stderr));
+    }
+
+    let output = Command::new(&hdc_path)
         .args(&["-t", &id, "file", "recv", remote_path, local_path.to_str().unwrap()])
         .output()
         .map_err(|e| format!("Failed to download screenshot: {}", e))?;
 
-    Ok(filename)
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Failed to download screenshot: {}", stderr));
+    }
+
+    Ok(local_path.to_string_lossy().to_string())
 }

@@ -1,102 +1,129 @@
 <template>
   <div class="home-view">
-    <div class="header">
-      <div class="logo">
+    <!-- 第一列：平台选择 -->
+    <div v-if="!sidebarCollapsed" class="platform-sidebar">
+      <div class="sidebar-header">
         <h3>{{ t('app.title') }}</h3>
+        <n-button text size="small" @click="sidebarCollapsed = true" class="collapse-btn">
+          <img src="@/assets/silder.svg" class="slider-icon" />
+        </n-button>
       </div>
-      <div class="header-tabs">
-        <n-tabs v-model:value="activeTab" type="card" @update:value="handleTabChange">
-          <n-tab-pane v-if="isMacOS" name="ios">
-            <template #tab>
-              <div class="tab-content">
-                <img src="@/assets/iOS.svg" class="tab-icon" />
-                {{ t('tabs.ios') }}
-              </div>
-            </template>
-          </n-tab-pane>
-          <n-tab-pane name="android">
-            <template #tab>
-              <div class="tab-content">
-                <img src="@/assets/android.svg" class="tab-icon" />
-                {{ t('tabs.android') }}
-              </div>
-            </template>
-          </n-tab-pane>
-          <n-tab-pane name="harmony" :tab="t('tabs.harmony')" />
-        </n-tabs>
+      <div class="platform-list">
+        <div 
+          v-if="isMacOS"
+          :class="['platform-item', { active: activeTab === 'ios' }]"
+          @click="handleTabChange('ios')"
+        >
+          <img src="@/assets/iOS.svg" class="platform-icon" />
+          <span>{{ t('tabs.ios') }}</span>
+        </div>
+        <div 
+          :class="['platform-item', { active: activeTab === 'android' }]"
+          @click="handleTabChange('android')"
+        >
+          <img src="@/assets/android.svg" class="platform-icon" />
+          <span>{{ t('tabs.android') }}</span>
+        </div>
+        <div 
+          :class="['platform-item', { active: activeTab === 'harmony' }]"
+          @click="handleTabChange('harmony')"
+        >
+          <img src="@/assets/phone.svg" class="platform-icon" />
+          <span>{{ t('tabs.harmony') }}</span>
+        </div>
       </div>
-      <div class="header-actions">
-        <n-button text @click="router.push('/settings')">
-          <template #icon>
-            <n-icon :component="Settings" />
-          </template>
+      <div class="sidebar-footer">
+        <n-button text @click="router.push('/settings')" class="settings-button">
+          <img src="@/assets/settings.svg" class="settings-icon" />
           {{ t('actions.settings') }}
         </n-button>
       </div>
     </div>
 
-    <div class="toolbar">
-      <div class="toolbar-actions">
-        <n-input
-          v-model:value="searchText"
-          :placeholder="t('actions.search')"
-          clearable
-          style="width: 200px"
+    <!-- 第二列：设备列表 -->
+    <div class="device-panel">
+      <div class="device-header">
+        <div class="device-header-left" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+          <h4>{{ t('tabs.' + activeTab) }}</h4>
+          <n-button v-if="sidebarCollapsed" text size="small" @click="sidebarCollapsed = false" class="expand-btn">
+            <img src="@/assets/silder.svg" class="slider-icon slider-icon-expand" />
+          </n-button>
+        </div>
+        <div class="device-actions">
+          <n-input
+            v-model:value="searchText"
+            :placeholder="t('actions.search')"
+            clearable
+            size="small"
+            style="width: 180px"
+          />
+          <n-button @click="handleRefresh" size="small" quaternary circle>
+            <template #icon>
+              <n-icon :component="Refresh" />
+            </template>
+          </n-button>
+          <n-button @click="consoleCollapsed = !consoleCollapsed" size="small" quaternary circle>
+            <img src="@/assets/console.svg" class="console-icon" />
+          </n-button>
+        </div>
+      </div>
+      <div class="device-content">
+        <emulator-list
+          :emulators="filteredEmulators"
+          :loading="emulatorStore.loading"
+          :search-text="searchText"
+          :starting-emulators="startingEmulators"
+          :stopping-emulators="stoppingEmulators"
+          @start="handleStart"
+          @stop="handleStop"
+          @delete="handleDelete"
+          @wipe-data="handleWipeData"
+          @screenshot="handleScreenshot"
+          @view-logs="handleViewLogs"
+          @copy-id="handleCopyId"
         />
-        <n-button @click="handleRefresh">
-          <template #icon>
-            <n-icon :component="Refresh" />
-          </template>
-          {{ t('actions.refresh') }}
-        </n-button>
       </div>
     </div>
 
-    <div class="content-wrapper">
-      <emulator-list
-        :emulators="filteredEmulators"
-        :loading="emulatorStore.loading"
-        :search-text="searchText"
-        @start="handleStart"
-        @stop="handleStop"
-        @delete="handleDelete"
-        @wipe-data="handleWipeData"
-        @screenshot="handleScreenshot"
-        @view-logs="handleViewLogs"
-        @copy-id="handleCopyId"
-      />
-    </div>
-
-    <div class="console-panel" :class="{ collapsed: consoleCollapsed }">
-      <div class="console-header" @click="consoleCollapsed = !consoleCollapsed">
-        <span>控制台</span>
-        <div class="console-header-actions">
-          <n-button text size="small" @click.stop="clearConsole">清空</n-button>
-          <span class="collapse-icon">{{ consoleCollapsed ? '▲' : '▼' }}</span>
+    <!-- 第三列：控制台 -->
+    <transition name="console-slide">
+      <div v-if="!consoleCollapsed" class="console-panel">
+        <div class="console-header">
+          <span>控制台</span>
+          <div class="console-header-actions">
+            <n-button text size="small" @click="clearConsole">清空</n-button>
+            <n-button text size="small" @click="consoleCollapsed = true">
+              <template #icon>
+                <n-icon>✕</n-icon>
+              </template>
+            </n-button>
+          </div>
+        </div>
+        <div class="console-content" ref="consoleRef">
+          <div v-for="(log, index) in consoleLogs" :key="index" :class="['console-log', log.type]">
+            <span class="console-time">{{ log.time }}</span>
+            <span class="console-message">{{ log.message }}</span>
+          </div>
         </div>
       </div>
-      <div v-show="!consoleCollapsed" class="console-content" ref="consoleRef">
-        <div v-for="(log, index) in consoleLogs" :key="index" :class="['console-log', log.type]">
-          <span class="console-time">{{ log.time }}</span>
-          <span class="console-message">{{ log.message }}</span>
-        </div>
-      </div>
-    </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
-import { NTabs, NTabPane, NButton, NInput, NIcon, useMessage } from 'naive-ui'
-import { Settings, Refresh } from '@vicons/ionicons5'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
+import { NButton, NInput, NIcon, useMessage, useDialog } from 'naive-ui'
+import { Refresh } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useEmulatorStore } from '@/stores/emulator'
 import EmulatorList from '@/components/EmulatorList.vue'
+import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
 
 const { t } = useI18n()
 const router = useRouter()
 const message = useMessage()
+const dialog = useDialog()
 const emulatorStore = useEmulatorStore()
 
 const isMacOS = ref(false)
@@ -105,18 +132,23 @@ const searchText = ref('')
 const consoleLogs = ref<Array<{type: string, message: string, time: string}>>([])
 const consoleRef = ref<HTMLElement>()
 const consoleCollapsed = ref(true)
+const startingEmulators = ref<Set<string>>(new Set())
+const stoppingEmulators = ref<Set<string>>(new Set())
+const sidebarCollapsed = ref(false)
 
 const filteredEmulators = computed(() => {
-  return emulatorStore.emulators.filter(emulator => emulator.type === activeTab.value)
+  const emulators = emulatorStore.emulators.filter(emulator => emulator.type === activeTab.value)
+  return emulators.sort((a, b) => {
+    if (a.status === 'running' && b.status !== 'running') return -1
+    if (a.status !== 'running' && b.status === 'running') return 1
+    return 0
+  })
 })
 
 const addConsoleLog = (type: string, message: string) => {
   const time = new Date().toLocaleTimeString()
   consoleLogs.value.push({ type, message, time })
-  // 只在错误时自动展开控制台
-  if (type === 'error' && consoleCollapsed.value) {
-    consoleCollapsed.value = false
-  }
+  consoleCollapsed.value = false
   nextTick(() => {
     if (consoleRef.value) {
       consoleRef.value.scrollTop = consoleRef.value.scrollHeight
@@ -129,15 +161,36 @@ const clearConsole = () => {
 }
 
 onMounted(async () => {
-  // Check platform
-  isMacOS.value = navigator.platform.toLowerCase().includes('mac')
+  const userAgent = navigator.userAgent.toLowerCase()
+  isMacOS.value = userAgent.includes('mac')
   if (!isMacOS.value && activeTab.value === 'ios') {
     activeTab.value = 'android'
   }
   await handleRefresh()
+  window.addEventListener('focus', handleRefresh)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('focus', handleRefresh)
+})
+
+watch(consoleCollapsed, async (collapsed) => {
+  try {
+    const appWindow = getCurrentWindow()
+    const currentSize = await appWindow.innerSize()
+    
+    if (collapsed) {
+      await appWindow.setSize(new LogicalSize(828, currentSize.height))
+    } else {
+      await appWindow.setSize(new LogicalSize(1148, currentSize.height))
+    }
+  } catch (error) {
+    console.error('Failed to resize window:', error)
+  }
 })
 
 const handleTabChange = async (tab: string) => {
+  activeTab.value = tab
   localStorage.setItem('activeTab', tab)
   await emulatorStore.fetchEmulators(tab as any)
 }
@@ -148,44 +201,55 @@ const handleRefresh = async () => {
 
 const handleStart = async (id: string) => {
   try {
+    startingEmulators.value.add(id)
     addConsoleLog('info', `正在启动模拟器: ${id}`)
     await emulatorStore.startEmulator(id)
     addConsoleLog('success', `模拟器启动成功: ${id}`)
     message.success(t('messages.startSuccess'))
-    // 等待模拟器被adb检测到后再刷新
-    setTimeout(async () => {
-      await handleRefresh()
-    }, 10000)
+    await handleRefresh()
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
     addConsoleLog('error', `模拟器启动失败: ${id} - ${errorMsg}`)
     console.error('Start emulator error:', error)
     message.error(errorMsg)
+  } finally {
+    startingEmulators.value.delete(id)
   }
 }
 
 const handleStop = async (id: string) => {
   try {
+    stoppingEmulators.value.add(id)
     await emulatorStore.stopEmulator(id)
     message.success(t('messages.stopSuccess'))
-    // 刷新列表以更新状态
     await handleRefresh()
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
     addConsoleLog('error', `模拟器关闭失败: ${id} - ${errorMsg}`)
     console.error('Stop emulator error:', error)
     message.error(errorMsg)
+  } finally {
+    stoppingEmulators.value.delete(id)
   }
 }
 
 const handleDelete = async (id: string) => {
-  try {
-    await emulatorStore.deleteEmulator(id)
-    message.success(t('messages.deleteSuccess'))
-    await handleRefresh()
-  } catch (error) {
-    message.error(t('messages.error'))
-  }
+  dialog.warning({
+    title: t('dialogs.deleteTitle'),
+    content: t('dialogs.deleteContent', { id }),
+    positiveText: t('actions.delete'),
+    negativeText: t('settings.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await emulatorStore.deleteEmulator(id)
+        message.success(t('messages.deleteSuccess'))
+        await handleRefresh()
+      } catch (error) {
+        const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
+        message.error(errorMsg)
+      }
+    }
+  })
 }
 
 const handleWipeData = async (id: string) => {
@@ -199,16 +263,17 @@ const handleWipeData = async (id: string) => {
 
 const handleScreenshot = async (id: string) => {
   try {
-    await emulatorStore.takeScreenshot(id)
-    message.success(t('messages.screenshotSuccess'))
+    const path = await emulatorStore.takeScreenshot(id)
+    message.success(t('messages.screenshotSaved', { path }))
   } catch (error) {
-    message.error(t('messages.error'))
+    const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
+    message.error(errorMsg)
   }
 }
 
 const handleViewLogs = (id: string) => {
-  // TODO: Open log viewer dialog
-  console.log('View logs:', id)
+  consoleCollapsed.value = false
+  addConsoleLog('info', `查看模拟器日志: ${id}`)
 }
 
 const handleCopyId = (id: string) => {
@@ -220,163 +285,225 @@ const handleCopyId = (id: string) => {
 <style scoped>
 .home-view {
   display: flex;
-  flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
-.header {
+/* 第一列：平台侧边栏 */
+.platform-sidebar {
+  width: 200px;
+  background: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
   display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 16px 24px;
-  /* border-bottom: 1px solid #e0e0e0; */
+  flex-direction: column;
+  flex-shrink: 0;
 }
 
-.logo h1 {
-  font-size: 20px;
+.sidebar-header {
+  padding: 12px 20px 0 20px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  height: 61px;
+}
+
+.sidebar-header h3 {
+  padding-top: 13px;
+  font-size: 16px;
   font-weight: 600;
 }
 
-.header-tabs {
+.collapse-btn {
+  color: #666;
+}
+
+.slider-icon {
+  width: 24px;
+  height: 24px;
+  color: #666;
+}
+
+.slider-icon-expand {
+  transform: rotate(180deg);
+}
+
+.platform-list {
   flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding-right: 20px;
+  padding: 8px;
+  overflow-y: auto;
 }
 
-.header-tabs :deep(.n-tabs) {
-  width: auto;
-  height: 36px;
+.platform-item {
   display: flex;
   align-items: center;
-}
-
-.header-tabs :deep(.n-tabs-nav) {
-  border-bottom: none !important;
-  background: #f0f0f0;
-  border-radius: 20px;
-  padding: 3px;
-  width: auto;
-  display: inline-flex;
-  margin: 0;
-  height: 36px;
-  align-items: center;
-}
-
-.header-tabs :deep(.n-tabs-nav-scroll-content) {
-  display: flex;
-  align-items: center;
-}
-
-.header-tabs :deep(.n-tabs-tab) {
-  border: none !important;
-  background: transparent !important;
-  border-radius: 16px !important;
-  margin: 0 1px;
-  transition: all 0.2s ease;
-  height: 30px;
-  line-height: 30px;
-  padding: 0 16px;
-}
-
-.header-tabs :deep(.n-tabs-tab--active) {
-  background: white !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.header-tabs :deep(.n-tabs-tab--active .n-tabs-tab__label) {
-  color: #18a058 !important;
-}
-
-.tab-content {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.tab-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 0px 24px;
-  /* border-bottom: 1px solid #e0e0e0; */
-}
-
-.toolbar-actions {
-  display: flex;
   gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.platform-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.platform-item.active {
+  background: #E0E0E0;
+  color: #424242;
+  font-weight: 500;
+}
+
+.platform-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.settings-button {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.settings-icon {
+  width: 21px;
+  height: 21px;
+  margin-right: 8px;
+}
+
+/* 第二列：设备面板 */
+.device-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  height: 61px;
+  padding: 12px 20px 0 20px;
+}
+
+.device-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: margin-left 0.3s ease;
+}
+
+.device-header-left.sidebar-collapsed {
+  margin-left: 70px;
+}
+
+.expand-btn {
+  color: #666;
+}
+
+.device-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  padding-top: 3px;
+}
+
+.device-actions {
+  display: flex;
+  gap: 8px;
   align-items: center;
 }
 
-.content-wrapper {
+.console-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.device-content {
   flex: 1;
   overflow: hidden;
 }
 
+/* 第三列：控制台 */
 .console-panel {
-  border-top: 1px solid #e0e0e0;
+  width: 320px;
+  border-left: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
-  transition: height 0.3s ease;
+  background: #f8f9fa;
   flex-shrink: 0;
-  margin-top: auto;
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
-.console-panel.collapsed {
-  height: auto;
+.console-slide-enter-active,
+.console-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.console-slide-enter-from,
+.console-slide-leave-to {
+  transform: translateX(100%);
+}
+
+.console-slide-enter-to,
+.console-slide-leave-from {
+  transform: translateX(0);
 }
 
 .console-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: #f5f5f5;
-  /* border-bottom: 1px solid #e0e0e0; */
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  user-select: none;
+  height: 61px;
 }
 
 .console-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.collapse-icon {
-  font-size: 12px;
-  color: #666;
+  gap: 4px;
 }
 
 .console-content {
-  height: 160px;
+  flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 12px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
-  background: #f5f5f5;
   color: #333;
 }
 
 .console-log {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .console-time {
   color: #888;
-  min-width: 80px;
+  font-size: 11px;
+}
+
+.console-message {
+  word-break: break-word;
 }
 
 .console-log.error .console-message {

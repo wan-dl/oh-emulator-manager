@@ -154,13 +154,22 @@ pub async fn screenshot_ios(id: String) -> Result<String, String> {
     {
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
         let filename = format!("screenshot_{}_{}.png", id, timestamp);
-        let path = std::env::temp_dir().join(&filename);
+        
+        // Get screenshot directory from settings
+        let screenshot_dir = crate::commands::settings::get_screenshot_dir()
+            .ok_or_else(|| "Cannot find screenshot directory".to_string())?;
+        let path = std::path::Path::new(&screenshot_dir).join(&filename);
 
-        Command::new("xcrun")
+        let output = Command::new("xcrun")
             .args(&["simctl", "io", &id, "screenshot", path.to_str().unwrap()])
             .output()
             .map_err(|e| format!("Failed to take screenshot: {}", e))?;
 
-        Ok(filename)
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Screenshot failed: {}", stderr));
+        }
+
+        Ok(path.to_string_lossy().to_string())
     }
 }

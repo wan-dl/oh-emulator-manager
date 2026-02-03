@@ -55,6 +55,14 @@
                 </button>
               </div>
             </n-form-item>
+            <n-form-item :label="t('settings.screenshotDir')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.screenshotDir" @blur="handleAutoSave" />
+                <n-button @click="selectScreenshotDir">
+                  {{ t('settings.selectFolder') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
             <n-form-item :label="t('settings.autoStart')">
               <n-switch v-model:value="settingsStore.autoStart" @update:value="handleAutoSave" />
             </n-form-item>
@@ -72,7 +80,7 @@
           <n-form label-placement="left" label-width="120">
             <n-form-item :label="t('settings.androidHome')">
               <n-input-group>
-                <n-input v-model:value="settingsStore.androidHome" readonly />
+                <n-input v-model:value="settingsStore.androidHome" @blur="handleAutoSave" />
                 <n-button @click="selectAndroidHome">
                   {{ t('settings.selectFolder') }}
                 </n-button>
@@ -86,7 +94,7 @@
           <n-form label-placement="left" label-width="120">
             <n-form-item :label="t('settings.xcodeHome')">
               <n-input-group>
-                <n-input v-model:value="settingsStore.xcodeHome" readonly />
+                <n-input v-model:value="settingsStore.xcodeHome" @blur="handleAutoSave" />
                 <n-button @click="selectXcodeHome">
                   {{ t('settings.selectFolder') }}
                 </n-button>
@@ -97,11 +105,43 @@
 
         <!-- 鸿蒙设置 -->
         <div v-if="activeTab === 'harmony'" class="tab-content">
-          <n-form label-placement="left" label-width="120">
+          <n-form label-placement="left" label-width="160">
             <n-form-item :label="t('settings.devecoHome')">
               <n-input-group>
-                <n-input v-model:value="settingsStore.devecoHome" readonly />
+                <n-input v-model:value="settingsStore.devecoHome" @blur="handleAutoSave" />
                 <n-button @click="selectDevecoHome">
+                  {{ t('settings.selectFolder') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+            <n-form-item :label="t('settings.harmonyEmulatorPath')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.harmonyEmulatorPath" @blur="handleAutoSave" :placeholder="t('settings.harmonyEmulatorPathPlaceholder')" />
+                <n-button @click="selectHarmonyEmulatorPath">
+                  {{ t('settings.selectFile') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+            <n-form-item :label="t('settings.harmonyHdcPath')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.harmonyHdcPath" @blur="handleAutoSave" :placeholder="t('settings.harmonyHdcPathPlaceholder')" />
+                <n-button @click="selectHarmonyHdcPath">
+                  {{ t('settings.selectFile') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+            <n-form-item :label="t('settings.harmonyImageLocation')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.harmonyImageLocation" @blur="handleAutoSave" />
+                <n-button @click="selectHarmonyImageLocation">
+                  {{ t('settings.selectFolder') }}
+                </n-button>
+              </n-input-group>
+            </n-form-item>
+            <n-form-item :label="t('settings.harmonyEmulatorLocation')">
+              <n-input-group>
+                <n-input v-model:value="settingsStore.harmonyEmulatorLocation" @blur="handleAutoSave" />
+                <n-button @click="selectHarmonyEmulatorLocation">
                   {{ t('settings.selectFolder') }}
                 </n-button>
               </n-input-group>
@@ -124,7 +164,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { NForm, NFormItem, NSelect, NSwitch, NInput, NInputGroup, NButton, NIcon, useMessage } from 'naive-ui'
+import { NForm, NFormItem, NSwitch, NInput, NInputGroup, NButton, NIcon, useMessage } from 'naive-ui'
 import { ArrowBack } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -146,26 +186,25 @@ const tabs = computed(() => [
   { key: 'about', label: t('settings.about') }
 ])
 
-const languageOptions = [
+const languageOptions: Array<{label: string, value: 'zh-CN' | 'en-US'}> = [
   { label: '中文', value: 'zh-CN' },
   { label: 'English', value: 'en-US' }
 ]
 
-const themeOptions = computed(() => [
+const themeOptions = computed<Array<{label: string, value: 'light' | 'dark' | 'system'}>>(() => [
   { label: t('theme.light'), value: 'light' },
   { label: t('theme.dark'), value: 'dark' },
   { label: t('theme.system'), value: 'system' }
 ])
 
 const selectXcodeHome = async () => {
-  console.log('selectXcodeHome called')
   try {
     const selected = await open({
       directory: true,
       multiple: false,
+      canCreateDirectories: true,
       title: 'Select Xcode Path'
     })
-    console.log('Selected path:', selected)
     if (selected) {
       settingsStore.xcodeHome = selected as string
       await handleAutoSave()
@@ -176,15 +215,32 @@ const selectXcodeHome = async () => {
   }
 }
 
-const selectAndroidHome = async () => {
-  console.log('selectAndroidHome called')
+const selectScreenshotDir = async () => {
   try {
     const selected = await open({
       directory: true,
       multiple: false,
+      canCreateDirectories: true,
+      title: t('settings.selectScreenshotDir')
+    })
+    if (selected) {
+      settingsStore.screenshotDir = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    message.error('选择文件夹失败: ' + error)
+  }
+}
+
+const selectAndroidHome = async () => {
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      canCreateDirectories: true,
       title: 'Select Android SDK Path'
     })
-    console.log('Selected path:', selected)
     if (selected) {
       settingsStore.androidHome = selected as string
       await handleAutoSave()
@@ -196,14 +252,13 @@ const selectAndroidHome = async () => {
 }
 
 const selectDevecoHome = async () => {
-  console.log('selectDevecoHome called')
   try {
     const selected = await open({
       directory: true,
       multiple: false,
+      canCreateDirectories: true,
       title: 'Select DevEco Studio Path'
     })
-    console.log('Selected path:', selected)
     if (selected) {
       settingsStore.devecoHome = selected as string
       await handleAutoSave()
@@ -211,6 +266,76 @@ const selectDevecoHome = async () => {
   } catch (error) {
     console.error('Error selecting folder:', error)
     message.error('选择文件夹失败: ' + error)
+  }
+}
+
+const selectHarmonyImageLocation = async () => {
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      canCreateDirectories: true,
+      title: t('settings.harmonyImageLocation')
+    })
+    if (selected) {
+      settingsStore.harmonyImageLocation = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    message.error('选择文件夹失败: ' + error)
+  }
+}
+
+const selectHarmonyEmulatorLocation = async () => {
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      canCreateDirectories: true,
+      title: t('settings.harmonyEmulatorLocation')
+    })
+    if (selected) {
+      settingsStore.harmonyEmulatorLocation = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting folder:', error)
+    message.error('选择文件夹失败: ' + error)
+  }
+}
+
+const selectHarmonyEmulatorPath = async () => {
+  try {
+    const selected = await open({
+      directory: false,
+      multiple: false,
+      title: t('settings.harmonyEmulatorPath')
+    })
+    if (selected) {
+      settingsStore.harmonyEmulatorPath = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting file:', error)
+    message.error('选择文件失败: ' + error)
+  }
+}
+
+const selectHarmonyHdcPath = async () => {
+  try {
+    const selected = await open({
+      directory: false,
+      multiple: false,
+      title: t('settings.harmonyHdcPath')
+    })
+    if (selected) {
+      settingsStore.harmonyHdcPath = selected as string
+      await handleAutoSave()
+    }
+  } catch (error) {
+    console.error('Error selecting file:', error)
+    message.error('选择文件失败: ' + error)
   }
 }
 
@@ -272,19 +397,19 @@ const handleAutoSave = async () => {
 .tabs-header {
   display: inline-flex;
   gap: 4px;
-  padding: 4px;
+  padding: 3px;
   background: #f0f0f0;
-  border-radius: 24px;
+  border-radius: 20px;
 }
 
 .tab-item {
-  padding: 8px 24px;
+  padding: 6px 20px;
   cursor: pointer;
-  border-radius: 20px;
+  border-radius: 16px;
   transition: all 0.2s;
   color: #666;
   background: transparent;
-  font-size: 14px;
+  font-size: 13px;
   border: none;
   white-space: nowrap;
 }
@@ -311,6 +436,7 @@ const handleAutoSave = async () => {
 
 .tab-content {
   max-width: 600px;
+  margin: 0 auto;
 }
 
 .button-group {

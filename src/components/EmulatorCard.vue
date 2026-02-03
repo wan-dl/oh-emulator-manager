@@ -1,44 +1,49 @@
 <template>
-  <n-card class="emulator-card" hoverable>
+  <div class="emulator-card">
     <div class="card-content">
       <div class="drag-handle" :class="{ 'running': emulator.status === 'running' }">⋮⋮</div>
       <div class="emulator-info">
+        <div class="emulator-name">{{ emulator.name }}</div>
         <div class="emulator-details">
           {{ emulator.deviceType }} · {{ emulator.osVersion }}
         </div>
-        <div class="emulator-id" @click="$emit('copyId', emulator.id)">{{ emulator.id }}</div>
       </div>
       <div class="emulator-actions">
-        <span v-if="emulator.status === 'running'" class="status-running">
-          {{ t(`status.${emulator.status}`) }}
-        </span>
         <n-button
           v-if="emulator.status === 'stopped'"
-          type="primary"
           size="small"
+          :loading="isStarting"
+          :disabled="isStarting"
           @click="$emit('start', emulator.id)"
+          quaternary
+          circle
+          class="start-button"
         >
-          {{ t("actions.start") }}
+          <img src="@/assets/start.svg" class="action-icon" />
         </n-button>
-        <n-button v-else type="error" size="small" @click="$emit('stop', emulator.id)">
-          {{ t("actions.stop") }}
+        <n-button v-else size="small" :loading="isStopping" :disabled="isStopping" @click="$emit('stop', emulator.id)" quaternary circle class="stop-button">
+          <img src="@/assets/closed.svg" class="action-icon" />
         </n-button>
         <n-dropdown :options="dropdownOptions" @select="handleAction">
-          <n-button size="small">{{ t("actions.more") }} ▼</n-button>
+          <n-button size="small" quaternary circle>
+            <img src="@/assets/more.svg" class="action-icon" />
+          </n-button>
         </n-dropdown>
       </div>
     </div>
-  </n-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { NCard, NButton, NTag, NDropdown } from "naive-ui";
+import { NButton, NDropdown } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import type { Emulator } from "@/stores/emulator";
 
 const props = defineProps<{
   emulator: Emulator;
+  isStarting?: boolean;
+  isStopping?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -53,10 +58,25 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const isStopped = computed(() => props.emulator.status === 'stopped');
+const isIOS = computed(() => props.emulator.type === 'ios');
+
 const dropdownOptions = computed(() => [
-  { label: t("actions.copyId"), key: "copyId" },
-  { label: t("actions.screenshot"), key: "screenshot" },
-  { label: t("actions.viewLogs"), key: "viewLogs" },
+  { 
+    label: t("actions.copyId"), 
+    key: "copyId",
+    disabled: isIOS.value ? false : isStopped.value
+  },
+  { 
+    label: t("actions.screenshot"), 
+    key: "screenshot",
+    disabled: isStopped.value
+  },
+  { 
+    label: t("actions.viewLogs"), 
+    key: "viewLogs",
+    disabled: isStopped.value
+  },
   { label: t("actions.wipeData"), key: "wipeData" },
   { label: t("actions.delete"), key: "delete" },
 ]);
@@ -68,20 +88,24 @@ const handleAction = (key: string) => {
 
 <style scoped>
 .emulator-card {
-  margin-bottom: 8px;
+  padding: 12px 16px;
+  transition: background-color 0.2s;
+}
+
+.emulator-card:hover {
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 .card-content {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 1px 0;
 }
 
 .drag-handle {
   cursor: grab;
   color: #999;
-  font-size: 16px;
+  font-size: 14px;
   user-select: none;
 }
 
@@ -93,21 +117,15 @@ const handleAction = (key: string) => {
   flex: 1;
 }
 
-.emulator-details {
+.emulator-name {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 2px;
 }
 
-.emulator-id {
+.emulator-details {
   font-size: 11px;
   color: #999;
-  cursor: pointer;
-  /* margin-bottom: 6px; */
-}
-
-.emulator-id:hover {
-  color: #18a058;
 }
 
 .emulator-actions {
@@ -122,5 +140,18 @@ const handleAction = (key: string) => {
 .status-running {
   color: #18a058;
   font-size: 13px;
+}
+
+.start-button {
+  color: #424242;
+}
+
+.stop-button {
+  color: #424242;
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
 }
 </style>

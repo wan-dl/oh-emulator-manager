@@ -11,11 +11,20 @@ pub struct Settings {
     pub close_to_minimize: bool,
     pub android_home: String,
     pub deveco_home: String,
+    pub harmony_image_location: String,
+    pub harmony_emulator_location: String,
+    pub harmony_emulator_path: String,
+    pub harmony_hdc_path: String,
     pub xcode_home: String,
+    pub screenshot_dir: String,
 }
 
 impl Default for Settings {
     fn default() -> Self {
+        let screenshot_dir = dirs::picture_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+        
         Self {
             language: "zh-CN".to_string(),
             theme: "system".to_string(),
@@ -24,7 +33,12 @@ impl Default for Settings {
             close_to_minimize: true,
             android_home: String::new(),
             deveco_home: String::new(),
+            harmony_image_location: String::new(),
+            harmony_emulator_location: String::new(),
+            harmony_emulator_path: String::new(),
+            harmony_hdc_path: String::new(),
             xcode_home: String::new(),
+            screenshot_dir,
         }
     }
 }
@@ -82,6 +96,88 @@ pub fn get_android_home() -> Option<String> {
         .ok()
 }
 
+pub fn get_screenshot_dir() -> Option<String> {
+    if let Ok(settings) = load_settings_from_file() {
+        if !settings.screenshot_dir.is_empty() {
+            return Some(settings.screenshot_dir);
+        }
+    }
+    
+    // Fallback to picture directory
+    dirs::picture_dir().map(|p| p.to_string_lossy().to_string())
+}
+
+pub fn get_deveco_home() -> Option<String> {
+    if let Ok(settings) = load_settings_from_file() {
+        if !settings.deveco_home.is_empty() {
+            return Some(settings.deveco_home);
+        }
+    }
+    
+    // Fallback to environment variable
+    std::env::var("DEVECO_SDK_HOME").ok()
+}
+
+pub fn get_harmony_emulator_location() -> Option<String> {
+    if let Ok(settings) = load_settings_from_file() {
+        if !settings.harmony_emulator_location.is_empty() {
+            return Some(settings.harmony_emulator_location);
+        }
+    }
+    None
+}
+
+pub fn get_harmony_image_location() -> Option<String> {
+    if let Ok(settings) = load_settings_from_file() {
+        if !settings.harmony_image_location.is_empty() {
+            return Some(settings.harmony_image_location);
+        }
+    }
+    None
+}
+
+pub fn get_harmony_emulator_path() -> Option<String> {
+    if let Ok(settings) = load_settings_from_file() {
+        // 优先使用用户配置的路径
+        if !settings.harmony_emulator_path.is_empty() {
+            return Some(settings.harmony_emulator_path);
+        }
+        // 否则从 DevEco Studio 路径拼接
+        if !settings.deveco_home.is_empty() {
+            let emulator_path = if cfg!(target_os = "macos") {
+                format!("{}/Contents/tools/emulator/Emulator", settings.deveco_home)
+            } else if cfg!(target_os = "windows") {
+                format!("{}/tools/emulator/Emulator.exe", settings.deveco_home)
+            } else {
+                format!("{}/tools/emulator/Emulator", settings.deveco_home)
+            };
+            return Some(emulator_path);
+        }
+    }
+    None
+}
+
+pub fn get_harmony_hdc_path() -> Option<String> {
+    if let Ok(settings) = load_settings_from_file() {
+        // 优先使用用户配置的路径
+        if !settings.harmony_hdc_path.is_empty() {
+            return Some(settings.harmony_hdc_path);
+        }
+        // 否则从 DevEco Studio 路径拼接
+        if !settings.deveco_home.is_empty() {
+            let hdc_path = if cfg!(target_os = "macos") {
+                format!("{}/Contents/sdk/default/openharmony/toolchains/hdc", settings.deveco_home)
+            } else if cfg!(target_os = "windows") {
+                format!("{}/sdk/default/openharmony/toolchains/hdc.exe", settings.deveco_home)
+            } else {
+                format!("{}/sdk/default/openharmony/toolchains/hdc", settings.deveco_home)
+            };
+            return Some(hdc_path);
+        }
+    }
+    None
+}
+
 #[tauri::command]
 pub async fn get_settings() -> Result<Settings, String> {
     let mut settings = load_settings_from_file()?;
@@ -106,6 +202,13 @@ pub async fn get_settings() -> Result<Settings, String> {
             settings.xcode_home = xcode_home;
         } else {
             settings.xcode_home = "/Applications/Xcode.app/Contents/Developer".to_string();
+        }
+    }
+
+    // Initialize screenshot_dir if empty
+    if settings.screenshot_dir.is_empty() {
+        if let Some(picture_dir) = dirs::picture_dir() {
+            settings.screenshot_dir = picture_dir.to_string_lossy().to_string();
         }
     }
 
