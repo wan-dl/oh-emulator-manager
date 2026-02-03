@@ -59,11 +59,14 @@ textarea,
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overscroll-behavior: none;
+  overflow: hidden;
 }
 
 #app {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 </style>

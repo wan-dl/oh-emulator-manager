@@ -171,6 +171,21 @@ onMounted(async () => {
   }
   await handleRefresh()
   window.addEventListener('focus', handleRefresh)
+  
+  // 禁用触摸板滑动导航
+  const preventNavigation = (e: WheelEvent) => {
+    // 检测是否是水平滑动
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      e.preventDefault()
+    }
+  }
+  
+  window.addEventListener('wheel', preventNavigation, { passive: false })
+  
+  // 清理函数
+  onUnmounted(() => {
+    window.removeEventListener('wheel', preventNavigation)
+  })
 })
 
 onUnmounted(() => {
@@ -291,6 +306,8 @@ const handleCopyId = (id: string) => {
   height: 100vh;
   overflow: hidden;
   position: relative;
+  overscroll-behavior: none;
+  touch-action: pan-y;
 }
 
 /* 第一列：平台侧边栏 */
@@ -444,27 +461,27 @@ const handleCopyId = (id: string) => {
   flex-direction: column;
   background: #f8f9fa;
   flex-shrink: 0;
-  position: fixed;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 1000;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .console-slide-enter-active,
 .console-slide-leave-active {
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.console-slide-enter-from,
+.console-slide-enter-from {
+  width: 0;
+  opacity: 0;
+}
+
 .console-slide-leave-to {
-  transform: translateX(100%);
+  width: 0;
+  opacity: 0;
 }
 
 .console-slide-enter-to,
 .console-slide-leave-from {
-  transform: translateX(0);
+  width: 320px;
+  opacity: 1;
 }
 
 .console-header {
