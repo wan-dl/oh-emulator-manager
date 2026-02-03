@@ -13,11 +13,14 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             // Android commands
             android::list_android_emulators,
-            android::start_android_emulator,
+             android::start_android_emulator,
             android::stop_android_emulator,
             android::delete_android_emulator,
             android::wipe_android_data,
             android::screenshot_android,
+            android::start_logcat,
+            android::get_logcat_logs,
+            android::stop_logcat,
             // iOS commands
             ios::list_ios_simulators,
             ios::start_ios_simulator,
@@ -33,6 +36,7 @@ fn main() {
             // Settings commands
             settings::get_settings,
             settings::save_settings,
+            settings::open_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

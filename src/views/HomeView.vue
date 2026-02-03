@@ -43,11 +43,16 @@
     <!-- 第二列：设备列表 -->
     <div class="device-panel">
       <div class="device-header">
-        <div class="device-header-left" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
-          <h4>{{ t('tabs.' + activeTab) }}</h4>
+        <div 
+          class="device-header-left" 
+          :class="{ 'sidebar-collapsed': sidebarCollapsed }"
+          :style="{ marginLeft: (sidebarCollapsed && isMacOS) ? '70px' : '0' }"
+        >
+          
           <n-button v-if="sidebarCollapsed" text size="small" @click="sidebarCollapsed = false" class="expand-btn">
             <img src="@/assets/silder.svg" class="slider-icon slider-icon-expand" />
           </n-button>
+          <h4>{{ t('tabs.' + activeTab) }}</h4>
         </div>
         <div class="device-actions">
           <n-input
@@ -62,7 +67,7 @@
               <n-icon :component="Refresh" />
             </template>
           </n-button>
-          <n-button @click="consoleCollapsed = !consoleCollapsed" size="small" quaternary circle>
+          <n-button v-if="consoleCollapsed" @click="consoleCollapsed = false" size="small" quaternary circle>
             <img src="@/assets/console.svg" class="console-icon" />
           </n-button>
         </div>
@@ -85,24 +90,70 @@
       </div>
     </div>
 
+    <!-- 拖动分隔条 -->
+    <div 
+      v-if="!consoleCollapsed"
+      class="resize-handle"
+      @mousedown="startResize"
+    ></div>
+
     <!-- 第三列：控制台 -->
     <transition name="console-slide">
-      <div v-if="!consoleCollapsed" class="console-panel">
+      <div v-if="!consoleCollapsed" class="console-panel" :style="{ width: consolePanelWidth + 'px' }">
         <div class="console-header">
-          <span>控制台</span>
+          <div class="console-header-left">
+            <n-button text size="small" @click="consoleCollapsed = true" class="collapse-btn">
+              <img src="@/assets/silder.svg" class="slider-icon" />
+            </n-button>
+            <span class="console-title">控制台</span>
+          </div>
           <div class="console-header-actions">
             <n-button text size="small" @click="clearConsole">清空</n-button>
-            <n-button text size="small" @click="consoleCollapsed = true">
-              <template #icon>
-                <n-icon>✕</n-icon>
-              </template>
-            </n-button>
           </div>
         </div>
-        <div class="console-content" ref="consoleRef">
-          <div v-for="(log, index) in consoleLogs" :key="index" :class="['console-log', log.type]">
-            <span class="console-time">{{ log.time }}</span>
-            <span class="console-message">{{ log.message }}</span>
+        <div class="console-body">
+          <div class="console-content" ref="consoleRef">
+            <div v-if="consoleTab === 'app'" class="console-logs">
+              <div v-for="(log, index) in consoleLogs" :key="index" :class="['console-log', log.type]">
+                <span class="console-time">{{ log.time }}</span>
+                <span class="console-message">{{ log.message }}</span>
+                <span v-if="log.path" class="console-path" @click="openScreenshot(log.path)">
+                  {{ log.path }}
+                </span>
+              </div>
+            </div>
+            <div v-else-if="consoleTab === 'device'" class="console-logs">
+              <div v-for="(log, index) in deviceLogs" :key="index" class="console-log device">
+                <span class="console-time">{{ log.time }}</span>
+                <span class="console-message">{{ log.message }}</span>
+              </div>
+              <div v-if="deviceLogs.length === 0" class="console-empty">
+                <span>暂无设备日志</span>
+                <span class="console-hint">启动模拟器后将显示 logcat 日志</span>
+              </div>
+            </div>
+          </div>
+          <div class="console-tabs">
+            <div 
+              :class="['console-tab', { active: consoleTab === 'app' }]"
+              @click="consoleTab = 'app'"
+              title="程序输出"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M9 9h6M9 13h6M9 17h4"/>
+              </svg>
+            </div>
+            <div 
+              :class="['console-tab', { active: consoleTab === 'device' }]"
+              @click="handleDeviceLogTab"
+              title="设备日志"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2"/>
+                <path d="M12 18h.01"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -129,12 +180,17 @@ const emulatorStore = useEmulatorStore()
 const isMacOS = ref(false)
 const activeTab = ref(localStorage.getItem('activeTab') || 'android')
 const searchText = ref('')
-const consoleLogs = ref<Array<{type: string, message: string, time: string}>>([])
+const consoleLogs = ref<Array<{type: string, message: string, time: string, path?: string}>>([])
+const deviceLogs = ref<Array<{message: string, time: string}>>([])
 const consoleRef = ref<HTMLElement>()
 const consoleCollapsed = ref(true)
+const consoleTab = ref<'app' | 'device'>('app')
+const consolePanelWidth = ref(320)
+const isResizing = ref(false)
 const startingEmulators = ref<Set<string>>(new Set())
 const stoppingEmulators = ref<Set<string>>(new Set())
 const sidebarCollapsed = ref(false)
+const logcatProcess = ref<any>(null)
 
 const filteredEmulators = computed(() => {
   const emulators = emulatorStore.emulators.filter(emulator => emulator.type === activeTab.value)
@@ -145,9 +201,9 @@ const filteredEmulators = computed(() => {
   })
 })
 
-const addConsoleLog = (type: string, message: string) => {
+const addConsoleLog = (type: string, message: string, path?: string) => {
   const time = new Date().toLocaleTimeString()
-  consoleLogs.value.push({ type, message, time })
+  consoleLogs.value.push({ type, message, time, path })
   // 只在错误时自动展开控制台
   if (type === 'error') {
     consoleCollapsed.value = false
@@ -160,7 +216,74 @@ const addConsoleLog = (type: string, message: string) => {
 }
 
 const clearConsole = () => {
-  consoleLogs.value = []
+  if (consoleTab.value === 'app') {
+    consoleLogs.value = []
+  } else {
+    deviceLogs.value = []
+  }
+}
+
+const handleDeviceLogTab = async () => {
+  consoleTab.value = 'device'
+  // 如果有运行中的模拟器，开始收集日志
+  const runningEmulator = filteredEmulators.value.find(e => e.status === 'running')
+  if (runningEmulator && !logcatProcess.value) {
+    await startLogcat(runningEmulator.id)
+  }
+}
+
+const startLogcat = async (deviceId: string) => {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core')
+    // 启动 logcat 监听
+    await invoke('start_logcat', { deviceId })
+    
+    // 定期获取日志
+    const fetchLogs = async () => {
+      try {
+        const logs: string[] = await invoke('get_logcat_logs', { deviceId })
+        const time = new Date().toLocaleTimeString()
+        logs.forEach(log => {
+          if (log.trim()) {
+            deviceLogs.value.push({ message: log, time })
+          }
+        })
+        
+        // 限制日志数量
+        if (deviceLogs.value.length > 1000) {
+          deviceLogs.value = deviceLogs.value.slice(-1000)
+        }
+        
+        nextTick(() => {
+          if (consoleRef.value && consoleTab.value === 'device') {
+            consoleRef.value.scrollTop = consoleRef.value.scrollHeight
+          }
+        })
+      } catch (error) {
+        console.error('Failed to fetch logcat:', error)
+      }
+    }
+    
+    // 每秒获取一次日志
+    logcatProcess.value = setInterval(fetchLogs, 1000)
+  } catch (error) {
+    console.error('Failed to start logcat:', error)
+    addConsoleLog('error', `无法启动设备日志: ${error}`)
+  }
+}
+
+const stopLogcat = async () => {
+  if (logcatProcess.value) {
+    clearInterval(logcatProcess.value)
+    logcatProcess.value = null
+  }
+  
+  try {
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('stop_logcat')
+  } catch (error) {
+    console.error('Failed to stop logcat:', error)
+  }
 }
 
 onMounted(async () => {
@@ -190,6 +313,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('focus', handleRefresh)
+  stopLogcat()
 })
 
 watch(consoleCollapsed, async (collapsed) => {
@@ -200,10 +324,23 @@ watch(consoleCollapsed, async (collapsed) => {
     if (collapsed) {
       await appWindow.setSize(new LogicalSize(828, currentSize.height))
     } else {
-      await appWindow.setSize(new LogicalSize(1148, currentSize.height))
+      await appWindow.setSize(new LogicalSize(828 + consolePanelWidth.value, currentSize.height))
     }
   } catch (error) {
     console.error('Failed to resize window:', error)
+  }
+})
+
+// 监听控制台宽度变化，同步调整窗口大小
+watch(consolePanelWidth, async (newWidth) => {
+  if (!consoleCollapsed.value) {
+    try {
+      const appWindow = getCurrentWindow()
+      const currentSize = await appWindow.innerSize()
+      await appWindow.setSize(new LogicalSize(828 + newWidth, currentSize.height))
+    } catch (error) {
+      console.error('Failed to resize window:', error)
+    }
   }
 })
 
@@ -283,9 +420,13 @@ const handleScreenshot = async (id: string) => {
   try {
     const path = await emulatorStore.takeScreenshot(id)
     message.success(t('messages.screenshotSaved', { path }))
+    // 将截图路径输出到控制台，标记为可点击的链接
+    addConsoleLog('screenshot', `截图已保存`, path)
+    consoleCollapsed.value = false
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
     message.error(errorMsg)
+    addConsoleLog('error', `截图失败: ${errorMsg}`)
   }
 }
 
@@ -297,6 +438,54 @@ const handleViewLogs = (id: string) => {
 const handleCopyId = (id: string) => {
   navigator.clipboard.writeText(id)
   message.success(t('messages.copySuccess'))
+}
+
+const openScreenshot = async (path: string) => {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('open_file', { path })
+  } catch (error) {
+    console.error('Failed to open screenshot:', error)
+    // 如果打开失败，尝试复制路径到剪贴板
+    try {
+      await navigator.clipboard.writeText(path)
+      message.info('无法打开图片，路径已复制到剪贴板')
+    } catch {
+      message.error('无法打开图片')
+    }
+  }
+}
+
+const startResize = (e: MouseEvent) => {
+  isResizing.value = true
+  const startX = e.clientX
+  const startWidth = consolePanelWidth.value
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizing.value) return
+    
+    // 计算新宽度（从右边拖动，所以是减法）
+    const deltaX = startX - e.clientX
+    const newWidth = startWidth + deltaX
+    
+    // 限制最小和最大宽度
+    if (newWidth >= 280 && newWidth <= 600) {
+      consolePanelWidth.value = newWidth
+    }
+  }
+
+  const handleMouseUp = () => {
+    isResizing.value = false
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = 'ew-resize'
+  document.body.style.userSelect = 'none'
 }
 </script>
 
@@ -422,10 +611,6 @@ const handleCopyId = (id: string) => {
   transition: margin-left 0.3s ease;
 }
 
-.device-header-left.sidebar-collapsed {
-  margin-left: 70px;
-}
-
 .expand-btn {
   color: #666;
 }
@@ -453,9 +638,33 @@ const handleCopyId = (id: string) => {
   overflow: hidden;
 }
 
+/* 拖动分隔条 */
+.resize-handle {
+  width: 4px;
+  background: transparent;
+  cursor: ew-resize;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.resize-handle:hover {
+  background: #eee;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+}
+
 /* 第三列：控制台 */
 .console-panel {
-  width: 320px;
+  min-width: 280px;
+  max-width: 600px;
   border-left: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
@@ -469,36 +678,62 @@ const handleCopyId = (id: string) => {
 }
 
 .console-slide-enter-from {
-  width: 0;
   opacity: 0;
+  transform: translateX(100%);
 }
 
 .console-slide-leave-to {
-  width: 0;
   opacity: 0;
+  transform: translateX(100%);
 }
 
 .console-slide-enter-to,
 .console-slide-leave-from {
-  width: 320px;
   opacity: 1;
+  transform: translateX(0);
 }
 
 .console-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid #e0e0e0;
+  height: 61px;
+}
+
+.console-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-title {
   font-size: 14px;
   font-weight: 500;
-  height: 61px;
+  color: #333;
+}
+
+.collapse-btn {
+  color: #666;
 }
 
 .console-header-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.console-header .slider-icon {
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+
+.console-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 .console-content {
@@ -508,6 +743,59 @@ const handleCopyId = (id: string) => {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
   color: #333;
+}
+
+.console-logs {
+  min-height: 100%;
+}
+
+.console-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+  gap: 8px;
+}
+
+.console-hint {
+  font-size: 11px;
+  color: #bbb;
+}
+
+.console-tabs {
+  width: 48px;
+  border-left: 1px solid #e0e0e0;
+  background: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.console-tab {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.console-tab:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.console-tab.active {
+  background: white;
+  color: #18a058;
+  border-left-color: #18a058;
 }
 
 .console-log {
@@ -526,6 +814,20 @@ const handleCopyId = (id: string) => {
   word-break: break-word;
 }
 
+.console-path {
+  color: #1976d2;
+  text-decoration: underline;
+  cursor: pointer;
+  word-break: break-all;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.console-path:hover {
+  color: #1565c0;
+  text-decoration: none;
+}
+
 .console-log.error .console-message {
   color: #d32f2f;
 }
@@ -536,5 +838,15 @@ const handleCopyId = (id: string) => {
 
 .console-log.info .console-message {
   color: #1976d2;
+}
+
+.console-log.screenshot .console-message {
+  color: #388e3c;
+}
+
+.console-log.device .console-message {
+  color: #424242;
+  font-size: 11px;
+  line-height: 1.4;
 }
 </style>

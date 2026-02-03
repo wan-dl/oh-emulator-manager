@@ -107,6 +107,35 @@ pub fn get_screenshot_dir() -> Option<String> {
     dirs::picture_dir().map(|p| p.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+pub async fn open_file(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open file: {}", e))?;
+    }
+    
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open file: {}", e))?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open file: {}", e))?;
+    }
+    
+    Ok(())
+}
+
 pub fn get_deveco_home() -> Option<String> {
     if let Ok(settings) = load_settings_from_file() {
         if !settings.deveco_home.is_empty() {

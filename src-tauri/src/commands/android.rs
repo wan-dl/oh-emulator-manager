@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use std::sync::Mutex;
 use tokio;
+
+static LOGCAT_BUFFER: Mutex<Vec<String>> = Mutex::new(Vec::new());
+static LOGCAT_RUNNING: Mutex<bool> = Mutex::new(false);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AndroidEmulator {
@@ -372,4 +376,75 @@ pub async fn screenshot_android(id: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to save screenshot: {}", e))?;
 
     Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn start_logcat(device_id: String) -> Result<(), String> {
+    let android_home = crate::commands::settings::get_android_home()
+        .ok_or_else(|| "Android SDK path not configured".to_string())?;
+    
+    let adb_exe = if cfg!(target_os = "windows") {
+        "adb.exe"
+    } else {
+        "adb"
+    };
+    
+    let adb_path = std::path::Path::new(&android_home)
+        .join("platform-tools")
+        .join(adb_exe);
+    
+    // 标记 logcat 正在运行
+    {
+        let mut running = LOGCAT_RUNNING.lock().unwrap();
+        *running = true;
+    }
+    
+    // 清空缓冲区
+    {
+        let mut buffer = LOGCAT_BUFFER.lock().unwrap();
+        buffer.clear();
+    }
+    
+    // 在后台线程中运行 logcat
+    let adb_path_clone = adb_path.clone();
+    let device_id_clone = device_id.clone();
+    
+    tokio::spawn(async move {
+        let output = Command::new(&adb_path_clone)
+            .args(&["-s", &device_id_clone, "logcat", "-v", "brief"])
+            .output();
+        
+        if let Ok(output) = output {
+            let logs = String::from_utf8_lossy(&output.stdout);
+            let mut buffer = LOGCAT_BUFFER.lock().unwrap();
+            
+            for line in logs.lines() {
+                if buffer.len() >= 1000 {
+                    buffer.remove(0);
+                }
+                buffer.push(line.to_string());
+            }
+        }
+    });
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_logcat_logs(_device_id: String) -> Result<Vec<String>, String> {
+    let mut buffer = LOGCAT_BUFFER.lock().unwrap();
+    let logs = buffer.clone();
+    buffer.clear();
+    Ok(logs)
+}
+
+#[tauri::command]
+pub async fn stop_logcat() -> Result<(), String> {
+    let mut running = LOGCAT_RUNNING.lock().unwrap();
+    *running = false;
+    
+    let mut buffer = LOGCAT_BUFFER.lock().unwrap();
+    buffer.clear();
+    
+    Ok(())
 }
