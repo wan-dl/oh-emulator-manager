@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::sync::Mutex;
 use tokio;
+use arboard::{Clipboard, ImageData};
+use image::GenericImageView;
 
 static LOGCAT_BUFFER: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static LOGCAT_RUNNING: Mutex<bool> = Mutex::new(false);
@@ -717,6 +719,34 @@ pub async fn stop_logcat() -> Result<(), String> {
     
     let mut buffer = LOGCAT_BUFFER.lock().unwrap();
     buffer.clear();
+    
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn copy_image_to_clipboard(path: String) -> Result<(), String> {
+    // 读取图片文件
+    let img = image::open(&path)
+        .map_err(|e| format!("Failed to open image: {}", e))?;
+    
+    // 获取图片尺寸和像素数据
+    let (width, height) = img.dimensions();
+    let rgba = img.to_rgba8();
+    let pixels = rgba.into_raw();
+    
+    // 创建 ImageData
+    let img_data = ImageData {
+        width: width as usize,
+        height: height as usize,
+        bytes: std::borrow::Cow::from(pixels),
+    };
+    
+    // 复制到剪贴板
+    let mut clipboard = Clipboard::new()
+        .map_err(|e| format!("Failed to access clipboard: {}", e))?;
+    
+    clipboard.set_image(img_data)
+        .map_err(|e| format!("Failed to copy image to clipboard: {}", e))?;
     
     Ok(())
 }

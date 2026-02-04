@@ -21,6 +21,7 @@ fn main() {
             android::start_logcat,
             android::get_logcat_logs,
             android::stop_logcat,
+            android::copy_image_to_clipboard,
             // iOS commands
             ios::list_ios_simulators,
             ios::start_ios_simulator,

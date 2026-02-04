@@ -117,9 +117,29 @@
               <div v-for="(log, index) in consoleLogs" :key="index" :class="['console-log', log.type]">
                 <span class="console-time">{{ log.time }}</span>
                 <span class="console-message">{{ log.message }}</span>
-                <span v-if="log.path" class="console-path" @click="openScreenshot(log.path)">
-                  {{ log.path }}
-                </span>
+                <div v-if="log.path" class="console-path-container">
+                  <span class="console-path" @click="openScreenshot(log.path)">
+                    {{ log.path }}
+                  </span>
+                  <n-button 
+                    text 
+                    size="tiny" 
+                    @click="copyPathToClipboard(log.path)"
+                    class="copy-path-btn"
+                    title="复制路径"
+                  >
+                    <img src="@/assets/copy.svg" class="btn-icon" />
+                  </n-button>
+                  <n-button 
+                    text 
+                    size="tiny" 
+                    @click="copyImageToClipboard(log.path)"
+                    class="copy-image-btn"
+                    title="复制图片"
+                  >
+                    <img src="@/assets/image.svg" class="btn-icon" />
+                  </n-button>
+                </div>
               </div>
             </div>
             <div v-else-if="consoleTab === 'device'" class="console-logs">
@@ -139,20 +159,14 @@
               @click="consoleTab = 'app'"
               title="程序输出"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M9 9h6M9 13h6M9 17h4"/>
-              </svg>
+              <img src="@/assets/app-log.svg" class="tab-icon" />
             </div>
             <div 
               :class="['console-tab', { active: consoleTab === 'device' }]"
               @click="handleDeviceLogTab"
               title="设备日志"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="5" y="2" width="14" height="20" rx="2"/>
-                <path d="M12 18h.01"/>
-              </svg>
+              <img src="@/assets/device-log.svg" class="tab-icon" />
             </div>
           </div>
         </div>
@@ -510,6 +524,28 @@ const openScreenshot = async (path: string) => {
   }
 }
 
+const copyPathToClipboard = async (path: string) => {
+  try {
+    await navigator.clipboard.writeText(path)
+    message.success('路径已复制到剪贴板')
+  } catch (error) {
+    console.error('Failed to copy path:', error)
+    message.error('复制失败')
+  }
+}
+
+const copyImageToClipboard = async (path: string) => {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('copy_image_to_clipboard', { path })
+    message.success('图片已复制到剪贴板')
+  } catch (error) {
+    console.error('Failed to copy image:', error)
+    const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : '复制失败')
+    message.error(errorMsg)
+  }
+}
+
 const startResize = (e: MouseEvent) => {
   isResizing.value = true
   const startX = e.clientX
@@ -852,6 +888,12 @@ const startResize = (e: MouseEvent) => {
   border-left-color: #18a058;
 }
 
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .console-log {
   margin-bottom: 8px;
   display: flex;
@@ -874,12 +916,47 @@ const startResize = (e: MouseEvent) => {
   cursor: pointer;
   word-break: break-all;
   font-size: 11px;
-  margin-top: 2px;
+  flex: 1;
 }
 
 .console-path:hover {
   color: #1565c0;
   text-decoration: none;
+}
+
+.console-path-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.copy-path-btn {
+  color: #666;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.copy-path-btn:hover {
+  color: #1976d2;
+  background: rgba(25, 118, 210, 0.08);
+}
+
+.copy-image-btn {
+  color: #666;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.copy-image-btn:hover {
+  color: #388e3c;
+  background: rgba(56, 142, 60, 0.08);
+}
+
+.btn-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 
 .console-log.error .console-message {

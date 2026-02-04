@@ -21,6 +21,8 @@ notify = "6"
 chrono = "0.4"
 dirs = "5"
 lazy_static = "1.4"
+arboard = { version = "3.4", features = ["image-data"] }
+image = "0.25"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 

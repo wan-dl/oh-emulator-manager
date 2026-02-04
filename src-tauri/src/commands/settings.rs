@@ -48,7 +48,7 @@ impl Default for Settings {
 fn get_settings_path() -> Result<PathBuf, String> {
     let config_dir = dirs::config_dir()
         .ok_or_else(|| "Failed to get config directory".to_string())?;
-    let app_dir = config_dir.join("oh-emulator-manager");
+    let app_dir = config_dir.join("SimHub");
     
     // 确保目录存在
     fs::create_dir_all(&app_dir)
