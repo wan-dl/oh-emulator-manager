@@ -98,205 +98,49 @@
     ></div>
 
     <!-- 第三列：控制台 -->
-    <transition name="console-slide">
-      <div v-if="!consoleCollapsed" class="console-panel" :style="{ width: consolePanelWidth + 'px' }">
-        <div class="console-header">
-          <div class="console-header-left">
-            <n-button text size="small" @click="consoleCollapsed = true" class="collapse-btn">
-              <img src="@/assets/silder.svg" class="slider-icon" />
-            </n-button>
-            <span class="console-title">
-              {{ consoleTab === 'app' ? '控制台' : '设备日志' }}
-            </span>
-            <!-- 设备选择下拉列表 -->
-            <n-select
-              v-if="consoleTab === 'device'"
-              v-model:value="selectedLogDevice"
-              size="small"
-              :options="runningDeviceOptions"
-              :placeholder="runningDeviceOptions.length > 0 ? '选择设备' : '无运行中的设备'"
-              :disabled="runningDeviceOptions.length === 0"
-              @update:value="handleDeviceChange"
-              style="width: 200px; margin-left: 12px"
-            />
-          </div>
-        </div>
-        
-        <!-- 设备日志过滤器 -->
-        <div v-if="consoleTab === 'device'" class="console-filters">
-          <n-select
-            v-model:value="logFilter.level"
-            size="small"
-            :options="[
-              { label: '全部', value: 'all' },
-              { label: 'Verbose', value: 'V' },
-              { label: 'Debug', value: 'D' },
-              { label: 'Info', value: 'I' },
-              { label: 'Warning', value: 'W' },
-              { label: 'Error', value: 'E' },
-              { label: 'Fatal', value: 'F' }
-            ]"
-            style="width: 100px"
-          />
-          <n-select
-            v-model:value="logFilter.packageName"
-            size="small"
-            :options="packageList"
-            filterable
-            placeholder="包名过滤"
-            clearable
-            :render-label="renderPackageLabel"
-            style="flex: 1; max-width: 250px"
-          />
-          <n-input
-            v-if="showKeywordFilter"
-            v-model:value="logFilter.keyword"
-            size="small"
-            placeholder="关键字过滤"
-            clearable
-            style="flex: 1; max-width: 200px"
-          />
-          <n-button 
-            text 
-            size="small" 
-            @click="showKeywordFilter = !showKeywordFilter" 
-            :title="showKeywordFilter ? '隐藏关键字过滤' : '显示关键字过滤'" 
-            class="filter-action-btn"
-            :class="{ active: showKeywordFilter }"
-          >
-            <img src="@/assets/search.svg" class="action-icon" />
-          </n-button>
-          <n-button 
-            text 
-            size="small" 
-            @click="toggleLogOutput" 
-            :title="logOutputPaused ? '继续输出' : '暂停输出'" 
-            class="filter-action-btn"
-            :class="{ active: logOutputPaused }"
-          >
-            <img :src="logOutputPaused ? '/src/assets/play.svg' : '/src/assets/pause.svg'" class="action-icon" />
-          </n-button>
-          <n-button text size="small" @click="exportLogs" title="导出日志" class="filter-action-btn">
-            <img src="@/assets/export.svg" class="action-icon" />
-          </n-button>
-          <n-button text size="small" @click="clearConsole" title="清空日志" class="filter-action-btn">
-            <img src="@/assets/clear.svg" class="action-icon" />
-          </n-button>
-        </div>
-        
-        <!-- 时间过滤器 -->
-        <div v-if="consoleTab === 'device'" class="console-time-filters">
-          <!-- <img src="@/assets/time.svg" class="time-icon" /> -->
-          <n-radio-group v-model:value="timeFilterType" size="small">
-            <n-radio-button value="all">全部</n-radio-button>
-            <n-radio-button value="recent">最近</n-radio-button>
-            <!-- <n-radio-button value="since">时间点之后</n-radio-button> -->
-          </n-radio-group>
-          <n-input-number
-            v-if="timeFilterType === 'recent'"
-            v-model:value="recentMinutes"
-            size="small"
-            :min="1"
-            :max="60"
-            style="width: 80px"
-          />
-          <span v-if="timeFilterType === 'recent'" class="time-unit">分钟</span>
-          <n-date-picker
-            v-if="timeFilterType === 'since'"
-            v-model:value="sinceTime"
-            type="datetime"
-            size="small"
-            clearable
-            placeholder="选择时间"
-            style="width: 200px"
-            :is-date-disabled="(ts: number) => ts > Date.now()"
-          />
-        </div>
-        <div class="console-body">
-          <div class="console-content" ref="consoleRef">
-            <div v-if="consoleTab === 'app'" class="console-logs">
-              <div v-for="(log, index) in consoleLogs" :key="index" :class="['console-log', log.type]">
-                <span class="console-time">{{ log.time }}</span>
-                <span class="console-message">{{ log.message }}</span>
-                <div v-if="log.path" class="console-path-container">
-                  <span class="console-path" @click="openScreenshot(log.path)">
-                    {{ log.path }}
-                  </span>
-                  <n-button 
-                    text 
-                    size="tiny" 
-                    @click="copyPathToClipboard(log.path)"
-                    class="copy-path-btn"
-                    title="复制路径"
-                  >
-                    <img src="@/assets/copy.svg" class="btn-icon" />
-                  </n-button>
-                  <n-button 
-                    text 
-                    size="tiny" 
-                    @click="copyImageToClipboard(log.path)"
-                    class="copy-image-btn"
-                    title="复制图片"
-                  >
-                    <img src="@/assets/image.svg" class="btn-icon" />
-                  </n-button>
-                </div>
-              </div>
-            </div>
-            <div v-else-if="consoleTab === 'device'" class="console-logs">
-              <div v-for="(log, index) in filteredDeviceLogs" :key="index" class="console-log device">
-                <span class="console-message" v-html="log.html"></span>
-              </div>
-              <div v-if="filteredDeviceLogs.length === 0 && deviceLogs.length === 0" class="console-empty">
-                <span>暂无设备日志</span>
-                <span class="console-hint">启动模拟器后将显示 logcat 日志</span>
-              </div>
-              <div v-else-if="filteredDeviceLogs.length === 0 && deviceLogs.length > 0" class="console-empty">
-                <span>没有匹配的日志</span>
-                <span class="console-hint">尝试调整过滤条件</span>
-              </div>
-            </div>
-          </div>
-          <div class="console-tabs">
-            <div 
-              :class="['console-tab', { active: consoleTab === 'app' }]"
-              @click="consoleTab = 'app'"
-              title="程序输出"
-            >
-              <img src="@/assets/app-log.svg" class="tab-icon" />
-            </div>
-            <div 
-              :class="['console-tab', { active: consoleTab === 'device' }]"
-              @click="handleDeviceLogTab"
-              title="设备日志"
-            >
-              <img src="@/assets/device-log.svg" class="tab-icon" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <!-- 应用日志面板 -->
+    <app-log-panel
+      v-if="consoleTab === 'app'"
+      v-model:collapsed="consoleCollapsed"
+      :panel-width="consolePanelWidth"
+      :logs="consoleLogs"
+      @open-screenshot="openScreenshot"
+      @copy-path="copyPathToClipboard"
+      @copy-image="copyImageToClipboard"
+      @switch-to-device="handleDeviceLogTab"
+    />
+
+    <!-- 设备日志面板 -->
+    <device-log-panel
+      v-if="consoleTab === 'device'"
+      ref="deviceLogPanelRef"
+      v-model:collapsed="consoleCollapsed"
+      v-model:selected-device="selectedLogDevice"
+      v-model:show-keyword-filter="showKeywordFilter"
+      v-model:time-filter-type="timeFilterType"
+      v-model:recent-minutes="recentMinutes"
+      v-model:since-time="sinceTime"
+      :panel-width="consolePanelWidth"
+      :device-options="runningDeviceOptions"
+      :filter="logFilter"
+      @update-filter="updateLogFilter"
+      @switch-to-app="consoleTab = 'app'"
+      @log-error="addConsoleLog('error', $event)"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, nextTick, watch, h } from 'vue'
-import { NButton, NInput, NIcon, useMessage, useDialog, NSelect, NRadioGroup, NRadioButton, NInputNumber, NDatePicker } from 'naive-ui'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { NButton, NInput, NIcon, useMessage, useDialog } from 'naive-ui'
 import { Refresh } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useEmulatorStore } from '@/stores/emulator'
 import EmulatorList from '@/components/EmulatorList.vue'
+import AppLogPanel from '@/components/AppLogPanel.vue'
+import DeviceLogPanel from '@/components/DeviceLogPanel.vue'
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
-import AnsiToHtml from 'ansi-to-html'
-
-const ansiConverter = new AnsiToHtml({
-  fg: '#333',
-  bg: '#f8f9fa',
-  newline: false,
-  escapeXML: true,
-  stream: false
-})
 
 const { t } = useI18n()
 const router = useRouter()
@@ -304,31 +148,10 @@ const message = useMessage()
 const dialog = useDialog()
 const emulatorStore = useEmulatorStore()
 
-// 自定义包名渲染函数
-const renderPackageLabel = (option: any) => {
-  if (option.value === '') {
-    return h('span', { style: { fontWeight: 'bold' } }, option.label)
-  }
-  return h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } }, [
-    h('span', option.label),
-    option.isSystem ? h('span', { 
-      style: { 
-        fontSize: '10px', 
-        color: '#999', 
-        background: '#f0f0f0', 
-        padding: '2px 6px', 
-        borderRadius: '3px' 
-      } 
-    }, '系统') : null
-  ])
-}
-
 const isMacOS = ref(false)
 const activeTab = ref(localStorage.getItem('activeTab') || 'android')
 const searchText = ref('')
 const consoleLogs = ref<Array<{type: string, message: string, time: string, path?: string}>>([])
-const deviceLogs = ref<Array<{message: string}>>([])
-const consoleRef = ref<HTMLElement>()
 const consoleCollapsed = ref(true)
 const consoleTab = ref<'app' | 'device'>('app')
 const consolePanelWidth = ref(500)
@@ -336,20 +159,17 @@ const isResizing = ref(false)
 const startingEmulators = ref<Set<string>>(new Set())
 const stoppingEmulators = ref<Set<string>>(new Set())
 const sidebarCollapsed = ref(false)
-const logcatProcess = ref<any>(null)
-const currentLogDevice = ref<string>('')
 const selectedLogDevice = ref<string>('')
 const showKeywordFilter = ref(false)
-const logOutputPaused = ref(false)
-const packageList = ref<Array<{label: string, value: string, isSystem: boolean}>>([])
 const timeFilterType = ref<'all' | 'recent' | 'since'>('all')
 const recentMinutes = ref(5)
 const sinceTime = ref('')
 const logFilter = ref({
-  level: 'all', // all, V, D, I, W, E, F
+  level: 'all',
   keyword: '',
   packageName: ''
 })
+const deviceLogPanelRef = ref<any>(null)
 
 const filteredEmulators = computed(() => {
   const emulators = emulatorStore.emulators.filter(emulator => emulator.type === activeTab.value)
@@ -369,38 +189,9 @@ const runningDeviceOptions = computed(() => {
     }))
 })
 
-const filteredDeviceLogs = computed(() => {
-  let logs = deviceLogs.value
-  
-  // 时间过滤已经在后端通过 adb logcat -t 参数完成
-  // 这里只需要进行其他过滤
-  
-  // 按日志级别过滤
-  if (logFilter.value.level !== 'all') {
-    logs = logs.filter(log => {
-      const match = log.message.match(/\s([VDIWEF])\s/)
-      return match && match[1] === logFilter.value.level
-    })
-  }
-  
-  // 按关键字过滤
-  if (logFilter.value.keyword) {
-    const keyword = logFilter.value.keyword.toLowerCase()
-    logs = logs.filter(log => log.message.toLowerCase().includes(keyword))
-  }
-  
-  // 按包名过滤
-  if (logFilter.value.packageName) {
-    const packageName = logFilter.value.packageName.toLowerCase()
-    logs = logs.filter(log => log.message.toLowerCase().includes(packageName))
-  }
-  
-  // 转换 ANSI 颜色代码为 HTML
-  return logs.map(log => ({
-    ...log,
-    html: ansiConverter.toHtml(log.message)
-  }))
-})
+const updateLogFilter = (key: string, value: string) => {
+  logFilter.value[key as keyof typeof logFilter.value] = value
+}
 
 const addConsoleLog = (type: string, message: string, path?: string) => {
   const time = new Date().toLocaleTimeString()
@@ -409,212 +200,15 @@ const addConsoleLog = (type: string, message: string, path?: string) => {
   if (type === 'error') {
     consoleCollapsed.value = false
   }
-  nextTick(() => {
-    if (consoleRef.value) {
-      consoleRef.value.scrollTop = consoleRef.value.scrollHeight
-    }
-  })
-}
-
-const clearConsole = () => {
-  if (consoleTab.value === 'app') {
-    consoleLogs.value = []
-  } else {
-    deviceLogs.value = []
-  }
-}
-
-const exportLogs = async () => {
-  try {
-    const { save } = await import('@tauri-apps/plugin-dialog')
-    const logs = consoleTab.value === 'app' 
-      ? consoleLogs.value.map(log => `[${log.time}] ${log.message}`).join('\n')
-      : deviceLogs.value.map(log => log.message).join('\n')
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-    const defaultName = consoleTab.value === 'app' 
-      ? `app-logs-${timestamp}.txt`
-      : `device-logs-${currentLogDevice.value}-${timestamp}.txt`
-    
-    const filePath = await save({
-      defaultPath: defaultName,
-      filters: [{
-        name: 'Text Files',
-        extensions: ['txt']
-      }]
-    })
-    
-    if (filePath) {
-      // 使用 Tauri 的 invoke 调用后端写入文件
-      const { invoke } = await import('@tauri-apps/api/core')
-      await invoke('write_log_file', { path: filePath, content: logs })
-      message.success('日志已导出')
-    }
-  } catch (error) {
-    console.error('Failed to export logs:', error)
-    message.error('导出失败')
-  }
 }
 
 const handleDeviceLogTab = async () => {
   consoleTab.value = 'device'
   // 如果有运行中的模拟器，开始收集日志
   const runningEmulator = filteredEmulators.value.find(e => e.status === 'running')
-  if (runningEmulator) {
+  if (runningEmulator && deviceLogPanelRef.value) {
     selectedLogDevice.value = runningEmulator.id
-    if (!logcatProcess.value) {
-      // 设置当前设备名称
-      currentLogDevice.value = runningEmulator.name
-      await startLogcat(runningEmulator.id)
-      // 加载设备的包名列表
-      await loadDevicePackages(runningEmulator.id)
-    }
   }
-}
-
-const handleDeviceChange = async (deviceId: string) => {
-  // 停止当前的 logcat
-  await stopLogcat()
-  
-  // 清空日志
-  deviceLogs.value = []
-  
-  // 找到选中的设备
-  const emulator = filteredEmulators.value.find(e => e.id === deviceId)
-  if (emulator) {
-    currentLogDevice.value = emulator.name
-    await startLogcat(deviceId)
-    // 加载设备的包名列表
-    await loadDevicePackages(deviceId)
-  }
-}
-
-const loadDevicePackages = async (deviceId: string) => {
-  try {
-    const { invoke } = await import('@tauri-apps/api/core')
-    const packages: Array<{name: string, is_system: boolean}> = await invoke('get_device_packages', { deviceId })
-    
-    // 转换为下拉列表选项，不添加"全部"选项
-    packageList.value = packages.map(pkg => ({
-      label: pkg.name,
-      value: pkg.name,
-      isSystem: pkg.is_system
-    }))
-  } catch (error) {
-    console.error('Failed to load packages:', error)
-    packageList.value = []
-  }
-}
-
-const startLogcat = async (deviceId: string, timeFilter?: string) => {
-  try {
-    console.log('startLogcat: Starting for device', deviceId, 'with time filter:', timeFilter)
-    const { invoke } = await import('@tauri-apps/api/core')
-    // 启动 logcat 监听
-    console.log('startLogcat: Calling backend start_logcat')
-    await invoke('start_logcat', { deviceId, timeFilter: timeFilter || null })
-    console.log('startLogcat: Backend start_logcat completed')
-    
-    // 重置暂停状态
-    logOutputPaused.value = false
-    
-    // 定期获取日志
-    const fetchLogs = async () => {
-      try {
-        const logs: string[] = await invoke('get_logcat_logs', { deviceId })
-        console.log('fetchLogs: Received', logs.length, 'log lines')
-        
-        // 只有在未暂停时才添加日志
-        if (!logOutputPaused.value) {
-          // 检查用户是否在底部（允许一些误差）
-          const isAtBottom = consoleRef.value 
-            ? (consoleRef.value.scrollHeight - consoleRef.value.scrollTop - consoleRef.value.clientHeight) < 50
-            : true
-          
-          logs.forEach(log => {
-            // 添加时间戳
-            deviceLogs.value.push({ 
-              message: log,
-              timestamp: Date.now()
-            })
-          })
-          
-          // 限制日志数量
-          if (deviceLogs.value.length > 1000) {
-            deviceLogs.value = deviceLogs.value.slice(-1000)
-          }
-          
-          // 只有当用户在底部时才自动滚动
-          if (isAtBottom) {
-            nextTick(() => {
-              if (consoleRef.value && consoleTab.value === 'device') {
-                consoleRef.value.scrollTop = consoleRef.value.scrollHeight
-              }
-            })
-          }
-        }
-      } catch (error) {
-        console.error('fetchLogs: Failed to fetch logcat:', error)
-      }
-    }
-    
-    // 每秒获取一次日志
-    console.log('startLogcat: Setting up interval to fetch logs')
-    logcatProcess.value = setInterval(fetchLogs, 1000)
-    console.log('startLogcat: Interval set, process ID:', logcatProcess.value)
-  } catch (error) {
-    console.error('startLogcat: Failed to start logcat:', error)
-    addConsoleLog('error', `无法启动设备日志: ${error}`)
-  }
-}
-
-const restartLogcatWithTimeFilter = async () => {
-  if (!selectedLogDevice.value) return
-  
-  // 停止当前的 logcat
-  await stopLogcat()
-  
-  // 清空日志
-  deviceLogs.value = []
-  
-  // 构建时间过滤参数
-  let timeFilter: string | undefined = undefined
-  if (timeFilterType.value === 'recent') {
-    timeFilter = `recent:${recentMinutes.value}`
-  } else if (timeFilterType.value === 'since' && sinceTime.value) {
-    // 转换为 ISO 8601 格式
-    const date = new Date(sinceTime.value)
-    timeFilter = `since:${date.toISOString()}`
-  }
-  
-  // 重新启动 logcat
-  await startLogcat(selectedLogDevice.value, timeFilter)
-}
-
-// 监听时间过滤参数变化
-watch([timeFilterType, recentMinutes, sinceTime], () => {
-  restartLogcatWithTimeFilter()
-})
-
-const stopLogcat = async () => {
-  if (logcatProcess.value) {
-    clearInterval(logcatProcess.value)
-    logcatProcess.value = null
-  }
-  
-  // 重置暂停状态
-  logOutputPaused.value = false
-  
-  try {
-    const { invoke } = await import('@tauri-apps/api/core')
-    await invoke('stop_logcat')
-  } catch (error) {
-    console.error('Failed to stop logcat:', error)
-  }
-}
-
-const toggleLogOutput = () => {
-  logOutputPaused.value = !logOutputPaused.value
 }
 
 onMounted(async () => {
@@ -644,7 +238,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('focus', handleRefresh)
-  stopLogcat()
 })
 
 watch(consoleCollapsed, async (collapsed) => {
@@ -653,8 +246,6 @@ watch(consoleCollapsed, async (collapsed) => {
     const currentSize = await appWindow.innerSize()
     
     if (collapsed) {
-      // 控制台折叠时，停止 logcat
-      await stopLogcat()
       await appWindow.setSize(new LogicalSize(828, currentSize.height))
     } else {
       // 确保控制台宽度不会导致第二列小于 50px
@@ -832,30 +423,7 @@ const handleViewLogs = async (id: string) => {
   try {
     consoleCollapsed.value = false
     consoleTab.value = 'device'
-    
-    // 记录当前查看日志的设备
-    const emulator = filteredEmulators.value.find(e => e.id === id || e.name === id)
-    
-    if (emulator) {
-      currentLogDevice.value = emulator.name
-      selectedLogDevice.value = emulator.id
-    } else {
-      currentLogDevice.value = id
-      selectedLogDevice.value = id
-    }
-    
-    // 清空之前的日志
-    deviceLogs.value = []
-    
-    // 如果已经有 logcat 在运行，先停止
-    if (logcatProcess.value) {
-      await stopLogcat()
-    }
-    
-    // 启动新的 logcat
-    await startLogcat(id)
-    // 加载设备的包名列表
-    await loadDevicePackages(id)
+    selectedLogDevice.value = id
     addConsoleLog('info', `正在查看设备 ${id} 的日志`)
   } catch (error) {
     console.error('Error in handleViewLogs:', error)
