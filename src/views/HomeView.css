@@ -475,3 +475,16 @@
   user-select: text;
   cursor: text;
 }
+
+/* 删除确认对话框样式 */
+:deep(.n-dialog.n-dialog--warning) {
+  border-radius: 12px !important;
+}
+
+:deep(.n-dialog.n-dialog--warning .n-dialog__icon) {
+  color: #d32f2f !important;
+}
+
+:deep(.n-dialog.n-dialog--warning .n-dialog__icon .n-base-icon) {
+  color: #d32f2f !important;
+}

@@ -15,7 +15,7 @@
     "starting": "Starting",
     "stop": "Stop",
     "stopping": "Stopping",
-    "delete": "Delete",
+    "delete": "Delete AVD",
     "wipeData": "Wipe Data",
     "screenshot": "Screenshot",
     "viewLogs": "View Logs",
@@ -75,6 +75,7 @@
     "screenshotSaved": "Screenshot saved to: {path}",
     "copySuccess": "Copied to clipboard",
     "settingsSaved": "Settings saved",
+    "stopTimeout": "Stop timed out, please check emulator status manually",
     "error": "Operation failed"
   },
   "dialogs": {

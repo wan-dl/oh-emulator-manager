@@ -16,8 +16,8 @@
     "starting": "启动中",
     "stop": "关闭",
     "stopping": "关闭中",
-    "delete": "删除",
-    "wipeData": "清除数据",
+    "delete": "删除模拟器",
+    "wipeData": "清除模拟器数据",
     "screenshot": "截图",
     "viewLogs": "查看日志",
     "copyId": "复制 ID",
@@ -75,6 +75,7 @@
     "screenshotSaved": "截图已保存到: {path}",
     "copySuccess": "已复制到剪贴板",
     "settingsSaved": "设置已保存",
+    "stopTimeout": "关闭超时，请手动检查模拟器状态",
     "error": "操作失败"
   },
   "dialogs": {

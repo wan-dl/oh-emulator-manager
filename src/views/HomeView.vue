@@ -350,21 +350,31 @@ const handleStart = async (id: string) => {
 }
 
 const handleStop = async (id: string) => {
+  // 记住模拟器的 name，因为关闭后 id 会从 serial (emulator-5554) 变回 AVD 名称
+  const emulator = filteredEmulators.value.find(e => e.id === id)
+  const emulatorName = emulator?.name || id
+  
   try {
     stoppingEmulators.value.add(id)
+    // 同时添加 name，因为刷新后 id 会变回 AVD 名称
+    if (emulatorName !== id) {
+      stoppingEmulators.value.add(emulatorName)
+    }
     await emulatorStore.stopEmulator(id)
-    message.success(t('messages.stopSuccess'))
     
-    // 停止后轮询检查状态，确保UI更新
+    // 轮询检查状态，确认模拟器真正关闭后再提示成功
     let retries = 0
-    const maxRetries = 10
+    const maxRetries = 30
     const checkStatus = async () => {
       await handleRefresh()
-      const emulator = filteredEmulators.value.find(e => e.id === id || e.name === id)
+      // 用 name 匹配，因为关闭后 id 会变回 AVD 名称
+      const emu = filteredEmulators.value.find(e => e.name === emulatorName)
       
-      if (emulator?.status === 'stopped' || !emulator) {
-        // 状态已更新为停止或模拟器不存在
+      if (emu?.status === 'stopped' || !emu) {
+        // 模拟器已真正关闭，现在才提示成功
         stoppingEmulators.value.delete(id)
+        stoppingEmulators.value.delete(emulatorName)
+        message.success(t('messages.stopSuccess'))
         return
       }
       
@@ -373,8 +383,11 @@ const handleStop = async (id: string) => {
         // 继续轮询
         setTimeout(checkStatus, 1000)
       } else {
-        // 超时，停止轮询
+        // 超时，停止轮询，提示可能未完全关闭
         stoppingEmulators.value.delete(id)
+        stoppingEmulators.value.delete(emulatorName)
+        message.warning(t('messages.stopTimeout') || '关闭超时，请手动检查模拟器状态')
+        await handleRefresh()
       }
     }
     
@@ -386,18 +399,35 @@ const handleStop = async (id: string) => {
     console.error('Stop emulator error:', error)
     message.error(errorMsg)
     stoppingEmulators.value.delete(id)
+    stoppingEmulators.value.delete(emulatorName)
   }
 }
 
 const handleDelete = async (id: string) => {
+  // delete 需要 AVD 名称，运行中的模拟器 id 是 serial (emulator-5554)
+  const emulator = filteredEmulators.value.find(e => e.id === id)
+  const avdName = emulator?.name || id
   dialog.warning({
     title: t('dialogs.deleteTitle'),
-    content: t('dialogs.deleteContent', { id }),
+    content: t('dialogs.deleteContent', { id: avdName }),
     positiveText: t('actions.delete'),
     negativeText: t('settings.cancel'),
+    style: {
+      borderRadius: '12px'
+    },
+    positiveButtonProps: {
+      type: 'error',
+      ghost: false
+    },
+    negativeButtonProps: {
+      quaternary: true,
+      style: {
+        color: '#333'
+      }
+    },
     onPositiveClick: async () => {
       try {
-        await emulatorStore.deleteEmulator(id)
+        await emulatorStore.deleteEmulator(avdName)
         message.success(t('messages.deleteSuccess'))
         await handleRefresh()
       } catch (error) {
@@ -410,10 +440,17 @@ const handleDelete = async (id: string) => {
 
 const handleWipeData = async (id: string) => {
   try {
-    await emulatorStore.wipeData(id)
+    // wipeData 需要 AVD 名称，运行中的模拟器 id 是 serial (emulator-5554)
+    const emulator = filteredEmulators.value.find(e => e.id === id)
+    const avdName = emulator?.name || id
+    addConsoleLog('info', `正在清除模拟器数据: ${avdName}`)
+    consoleCollapsed.value = false
+    await emulatorStore.wipeData(avdName)
     message.success(t('messages.wipeDataSuccess'))
   } catch (error) {
-    message.error(t('messages.error'))
+    const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
+    addConsoleLog('error', `清除数据失败: ${errorMsg}`)
+    message.error(errorMsg)
   }
 }
 

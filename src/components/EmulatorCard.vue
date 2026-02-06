@@ -165,10 +165,17 @@ const handleAction = (key: string) => {
 .emulator-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.emulator-actions .n-button {
+  flex-shrink: 0;
 }
 
 .emulator-actions .n-button {
   font-size: 13px;
+  width: 34px;
+  height: 34px;
 }
 
 .status-running {

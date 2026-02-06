@@ -663,7 +663,7 @@ pub async fn delete_android_emulator(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn wipe_android_data(id: String) -> Result<(), String> {
+pub async fn wipe_android_data(id: String, app: tauri::AppHandle) -> Result<(), String> {
     // Get ANDROID_HOME from settings or environment
     let android_home = crate::commands::settings::get_android_home()
         .ok_or_else(|| "Android SDK path not configured. Please set it in Settings.".to_string())?;
@@ -674,10 +674,52 @@ pub async fn wipe_android_data(id: String) -> Result<(), String> {
         .or_else(|_| std::env::var("USERPROFILE").map(|h| format!("{}/.android/avd", h)))
         .map_err(|_| "Cannot determine AVD home directory".to_string())?;
     
-    let avd_path = std::path::Path::new(&avd_home).join(format!("{}.avd", id));
+    // 先读取 .ini 文件获取真实的 AVD 路径
+    let ini_path = std::path::Path::new(&avd_home).join(format!("{}.ini", id));
+    
+    let avd_path = if ini_path.exists() {
+        // 读取 .ini 文件内容
+        let ini_content = std::fs::read_to_string(&ini_path)
+            .map_err(|e| format!("Failed to read AVD ini file: {}", e))?;
+        
+        // 查找 path= 行
+        let mut real_path = None;
+        for line in ini_content.lines() {
+            if line.starts_with("path=") {
+                real_path = Some(line.trim_start_matches("path=").trim().to_string());
+                break;
+            }
+        }
+        
+        if let Some(path) = real_path {
+            std::path::PathBuf::from(path)
+        } else {
+            // 如果 .ini 文件中没有 path，回退到默认方式
+            std::path::Path::new(&avd_home).join(format!("{}.avd", id))
+        }
+    } else {
+        // 如果 .ini 文件不存在，使用默认方式
+        std::path::Path::new(&avd_home).join(format!("{}.avd", id))
+    };
+    
+    // 输出操作命令到日志
+    let cmd_str = format!("清除 Android 模拟器数据: AVD={}, INI={:?}, 实际路径={:?}", id, ini_path, avd_path);
+    println!("{}", cmd_str);
+    let _ = app.emit("add-log", serde_json::json!({
+        "type": "command",
+        "message": cmd_str,
+        "source": "app"
+    }));
     
     if !avd_path.exists() {
-        return Err(format!("AVD directory not found: {:?}", avd_path));
+        let error_msg = format!("AVD directory not found: {:?}", avd_path);
+        println!("Error: {}", error_msg);
+        let _ = app.emit("add-log", serde_json::json!({
+            "type": "error",
+            "message": error_msg.clone(),
+            "source": "app"
+        }));
+        return Err(error_msg);
     }
     
     // Delete userdata files to wipe data (without starting emulator)
@@ -693,12 +735,38 @@ pub async fn wipe_android_data(id: String) -> Result<(), String> {
     for file in &files_to_delete {
         let file_path = avd_path.join(file);
         if file_path.exists() {
+            let delete_msg = format!("删除文件: {:?}", file_path);
+            println!("{}", delete_msg);
+            let _ = app.emit("add-log", serde_json::json!({
+                "type": "info",
+                "message": delete_msg,
+                "source": "app"
+            }));
+            
             if file_path.is_dir() {
                 std::fs::remove_dir_all(&file_path)
-                    .map_err(|e| format!("Failed to delete {}: {}", file, e))?;
+                    .map_err(|e| {
+                        let error_msg = format!("Failed to delete {}: {}", file, e);
+                        println!("Error: {}", error_msg);
+                        let _ = app.emit("add-log", serde_json::json!({
+                            "type": "error",
+                            "message": error_msg.clone(),
+                            "source": "app"
+                        }));
+                        error_msg
+                    })?;
             } else {
                 std::fs::remove_file(&file_path)
-                    .map_err(|e| format!("Failed to delete {}: {}", file, e))?;
+                    .map_err(|e| {
+                        let error_msg = format!("Failed to delete {}: {}", file, e);
+                        println!("Error: {}", error_msg);
+                        let _ = app.emit("add-log", serde_json::json!({
+                            "type": "error",
+                            "message": error_msg.clone(),
+                            "source": "app"
+                        }));
+                        error_msg
+                    })?;
             }
             deleted_count += 1;
         }
@@ -706,8 +774,23 @@ pub async fn wipe_android_data(id: String) -> Result<(), String> {
     
     if deleted_count == 0 {
         // No user data files found, AVD might be clean already
+        let info_msg = format!("模拟器 {} 数据已经是干净的，无需清除", id);
+        println!("{}", info_msg);
+        let _ = app.emit("add-log", serde_json::json!({
+            "type": "info",
+            "message": info_msg,
+            "source": "app"
+        }));
         return Ok(());
     }
+    
+    let success_msg = format!("成功清除 {} 个数据文件", deleted_count);
+    println!("{}", success_msg);
+    let _ = app.emit("add-log", serde_json::json!({
+        "type": "success",
+        "message": success_msg,
+        "source": "app"
+    }));
 
     Ok(())
 }
