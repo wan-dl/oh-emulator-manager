@@ -69,9 +69,6 @@
             <n-form-item :label="t('settings.minimizeToTray')">
               <n-switch v-model:value="settingsStore.minimizeToTray" @update:value="handleAutoSave" />
             </n-form-item>
-            <n-form-item :label="t('settings.closeToMinimize')">
-              <n-switch v-model:value="settingsStore.closeToMinimize" @update:value="handleAutoSave" />
-            </n-form-item>
           </n-form>
         </div>
 

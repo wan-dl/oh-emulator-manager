@@ -7,7 +7,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const theme = ref<'light' | 'dark' | 'system'>('system')
   const autoStart = ref(false)
   const minimizeToTray = ref(true)
-  const closeToMinimize = ref(true)
   const androidHome = ref('')
   const devecoHome = ref('')
   const harmonyImageLocation = ref('')
@@ -25,7 +24,6 @@ export const useSettingsStore = defineStore('settings', () => {
       theme.value = settings.theme
       autoStart.value = settings.auto_start
       minimizeToTray.value = settings.minimize_to_tray
-      closeToMinimize.value = settings.close_to_minimize
       androidHome.value = settings.android_home
       devecoHome.value = settings.deveco_home
       harmonyImageLocation.value = settings.harmony_image_location
@@ -47,7 +45,6 @@ export const useSettingsStore = defineStore('settings', () => {
         theme: theme.value,
         auto_start: autoStart.value,
         minimize_to_tray: minimizeToTray.value,
-        close_to_minimize: closeToMinimize.value,
         android_home: androidHome.value,
         deveco_home: devecoHome.value,
         harmony_image_location: harmonyImageLocation.value,
@@ -66,7 +63,6 @@ export const useSettingsStore = defineStore('settings', () => {
     theme,
     autoStart,
     minimizeToTray,
-    closeToMinimize,
     androidHome,
     devecoHome,
     harmonyImageLocation,

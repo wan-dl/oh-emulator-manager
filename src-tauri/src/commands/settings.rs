@@ -8,7 +8,6 @@ pub struct Settings {
     pub theme: String,
     pub auto_start: bool,
     pub minimize_to_tray: bool,
-    pub close_to_minimize: bool,
     pub android_home: String,
     pub deveco_home: String,
     pub harmony_image_location: String,
@@ -31,7 +30,6 @@ impl Default for Settings {
             theme: "system".to_string(),
             auto_start: false,
             minimize_to_tray: true,
-            close_to_minimize: true,
             android_home: String::new(),
             deveco_home: String::new(),
             harmony_image_location: String::new(),
@@ -71,6 +69,11 @@ fn load_settings_from_file() -> Result<Settings, String> {
         .map_err(|e| format!("Failed to parse settings: {}", e))?;
     
     Ok(settings)
+}
+
+/// 公开的加载设置函数，供 main.rs 中窗口关闭事件使用
+pub fn load_settings() -> Result<Settings, String> {
+    load_settings_from_file()
 }
 
 fn save_settings_to_file(settings: &Settings) -> Result<(), String> {
