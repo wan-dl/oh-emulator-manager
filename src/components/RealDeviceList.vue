@@ -11,6 +11,8 @@
           :class="{ 'stripe': index % 2 === 1 }"
           :device="device"
           @copy-id="$emit('copyId', $event)"
+          @screenshot="$emit('screenshot', $event)"
+          @view-logs="$emit('viewLogs', $event)"
         />
       </div>
     </n-spin>
@@ -34,6 +36,8 @@ const props = defineProps<{
 
 defineEmits<{
   copyId: [serial: string]
+  screenshot: [serial: string]
+  viewLogs: [serial: string]
 }>()
 
 const filteredDevices = computed(() => {

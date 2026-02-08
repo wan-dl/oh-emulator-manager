@@ -55,17 +55,39 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   copyId: [serial: string]
+  screenshot: [serial: string]
+  viewLogs: [serial: string]
 }>()
 
 const { t } = useI18n()
 
-const dropdownOptions = computed(() => [
-  { label: t('actions.copyId'), key: 'copyId' },
-])
+const isAndroidOrHarmony = computed(() => 
+  props.device.type === 'android' || props.device.type === 'harmony'
+)
+
+const dropdownOptions = computed(() => {
+  const options = [
+    { label: t('actions.copyId'), key: 'copyId' },
+  ]
+  
+  // Android/Harmony 设备支持截图和查看日志
+  if (isAndroidOrHarmony.value) {
+    options.push(
+      { label: t('actions.screenshot'), key: 'screenshot' },
+      { label: t('actions.viewLogs'), key: 'viewLogs' }
+    )
+  }
+  
+  return options
+})
 
 const handleAction = (key: string) => {
   if (key === 'copyId') {
     emit('copyId', props.device.serial)
+  } else if (key === 'screenshot') {
+    emit('screenshot', props.device.serial)
+  } else if (key === 'viewLogs') {
+    emit('viewLogs', props.device.serial)
   }
 }
 

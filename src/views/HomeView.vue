@@ -86,6 +86,8 @@
           :loading="realDevicesLoading"
           :search-text="searchText"
           @copy-id="handleCopyId"
+          @screenshot="handleScreenshot"
+          @view-logs="handleViewLogs"
         />
         <emulator-list
           v-else
