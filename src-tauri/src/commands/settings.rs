@@ -96,9 +96,27 @@ pub fn get_android_home() -> Option<String> {
     }
     
     // Fallback to environment variables
-    std::env::var("ANDROID_HOME")
-        .or_else(|_| std::env::var("ANDROID_SDK_ROOT"))
-        .ok()
+    if let Ok(android_home) = std::env::var("ANDROID_HOME") {
+        return Some(android_home);
+    }
+    
+    if let Ok(android_sdk_root) = std::env::var("ANDROID_SDK_ROOT") {
+        return Some(android_sdk_root);
+    }
+    
+    // macOS: Try default Android SDK location
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(home) = std::env::var("HOME") {
+            let default_path = format!("{}/Library/Android/sdk", home);
+            let path = std::path::Path::new(&default_path);
+            if path.exists() && path.is_dir() {
+                return Some(default_path);
+            }
+        }
+    }
+    
+    None
 }
 
 pub fn get_android_force_kill() -> bool {
