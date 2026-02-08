@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="theme" :locale="locale" :date-locale="dateLocale">
+  <n-config-provider :theme="theme" :theme-overrides="themeOverrides" :locale="locale" :date-locale="dateLocale">
     <n-message-provider>
       <n-dialog-provider>
         <n-notification-provider>
@@ -53,6 +53,33 @@ const theme = computed(() => {
 
 const locale = computed(() => settingsStore.language === 'zh-CN' ? zhCN : enUS)
 const dateLocale = computed(() => settingsStore.language === 'zh-CN' ? dateZhCN : dateEnUS)
+
+// 自定义主题颜色
+const themeOverrides = {
+  common: {
+    primaryColor: '#2080f0',
+    primaryColorHover: '#4098fc',
+    primaryColorPressed: '#1060c9',
+    primaryColorSuppl: '#4098fc',
+    borderRadius: '18px'
+  },
+  Switch: {
+    railColorActive: '#2080f0',
+    railBorderRadiusSmall: '18px',
+    railBorderRadiusMedium: '18px',
+    railBorderRadiusLarge: '18px'
+  },
+  Checkbox: {
+    colorChecked: '#2080f0',
+    borderChecked: '#2080f0',
+    borderRadius: '3px'
+  },
+  Button: {
+    colorPrimary: '#2080f0',
+    colorHoverPrimary: '#4098fc',
+    colorPressedPrimary: '#1060c9'
+  }
+}
 </script>
 
 <style>
@@ -84,5 +111,16 @@ body {
   height: 100vh;
   overflow: hidden;
   overscroll-behavior: none;
+}
+
+/* 全局 Naive UI Switch 圆角修复 */
+.n-switch,
+.n-switch *,
+.n-switch__rail {
+  border-radius: 18px !important;
+}
+
+.n-switch__button {
+  border-radius: 50% !important;
 }
 </style>

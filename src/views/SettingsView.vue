@@ -30,7 +30,7 @@
       <div class="content">
         <!-- 通用设置 -->
         <div v-if="activeTab === 'general'" class="tab-content">
-          <n-form label-placement="left" label-width="120">
+          <n-form label-placement="left" label-width="160">
             <n-form-item :label="t('settings.language')">
               <div class="button-group">
                 <button
@@ -74,7 +74,7 @@
 
         <!-- Android 设置 -->
         <div v-if="activeTab === 'android'" class="tab-content">
-          <n-form label-placement="left" label-width="120">
+          <n-form label-placement="left" label-width="160">
             <n-form-item :label="t('settings.androidHome')">
               <n-input-group>
                 <n-input v-model:value="settingsStore.androidHome" @blur="handleAutoSave" />
@@ -93,7 +93,7 @@
 
         <!-- iOS 设置 -->
         <div v-if="activeTab === 'ios'" class="tab-content">
-          <n-form label-placement="left" label-width="120">
+          <n-form label-placement="left" label-width="160">
             <n-form-item :label="t('settings.xcodeHome')">
               <n-input-group>
                 <n-input v-model:value="settingsStore.xcodeHome" @blur="handleAutoSave" />
@@ -107,7 +107,7 @@
 
         <!-- 鸿蒙设置 -->
         <div v-if="activeTab === 'harmony'" class="tab-content">
-          <n-form label-placement="left" label-width="160">
+          <n-form label-placement="left" label-width="200">
             <n-form-item :label="t('settings.devecoHome')">
               <n-input-group>
                 <n-input v-model:value="settingsStore.devecoHome" @blur="handleAutoSave" />
@@ -422,7 +422,7 @@ const handleAutoSave = async () => {
 
 .tab-item.active {
   background: white;
-  color: #18a058;
+  color: #2080f0;
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -468,7 +468,7 @@ const handleAutoSave = async () => {
 
 .option-button.active {
   background: white;
-  color: #18a058;
+  color: #2080f0;
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -494,5 +494,51 @@ const handleAutoSave = async () => {
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid #e0e0e0;
+}
+
+/* Naive UI 组件蓝色主题 */
+:deep(.n-switch) {
+  border-radius: 18px !important;
+}
+
+:deep(.n-switch *) {
+  border-radius: 18px !important;
+}
+
+:deep(.n-switch__rail) {
+  border-radius: 18px !important;
+}
+
+:deep(.n-switch.n-switch--active) {
+  background-color: #2080f0 !important;
+  border-radius: 18px !important;
+}
+
+:deep(.n-switch.n-switch--active *) {
+  border-radius: 18px !important;
+}
+
+:deep(.n-switch.n-switch--active .n-switch__rail) {
+  border-radius: 18px !important;
+  background-color: #2080f0 !important;
+}
+
+:deep(.n-switch__button) {
+  border-radius: 50% !important;
+}
+
+:deep(.n-checkbox.n-checkbox--checked .n-checkbox-box) {
+  background-color: #2080f0 !important;
+  border-color: #2080f0 !important;
+}
+
+:deep(.n-button--primary-type) {
+  background-color: #2080f0 !important;
+  border-color: #2080f0 !important;
+}
+
+:deep(.n-button:not(.n-button--disabled):hover) {
+  background-color: #4098fc !important;
+  border-color: #4098fc !important;
 }
 </style>
