@@ -31,6 +31,13 @@
           <img src="@/assets/phone.svg" class="platform-icon" />
           <span>{{ t('tabs.harmony') }}</span>
         </div>
+        <div 
+          :class="['platform-item', { active: activeTab === 'realDevice' }]"
+          @click="handleTabChange('realDevice')"
+        >
+          <img src="@/assets/USB.svg" class="platform-icon" />
+          <span>{{ t('tabs.realDevice') }}</span>
+        </div>
       </div>
       <div class="sidebar-footer">
         <n-button text @click="router.push('/settings')" class="settings-button">
@@ -73,7 +80,15 @@
         </div>
       </div>
       <div class="device-content">
+        <real-device-list
+          v-if="activeTab === 'realDevice'"
+          :devices="realDevices"
+          :loading="realDevicesLoading"
+          :search-text="searchText"
+          @copy-id="handleCopyId"
+        />
         <emulator-list
+          v-else
           :emulators="filteredEmulators"
           :loading="emulatorStore.loading"
           :search-text="searchText"
@@ -142,6 +157,9 @@ import { useLogsStore } from '@/stores/logs'
 import EmulatorList from '@/components/EmulatorList.vue'
 import AppLogPanel from '@/components/AppLogPanel.vue'
 import DeviceLogPanel from '@/components/DeviceLogPanel.vue'
+import RealDeviceList from '@/components/RealDeviceList.vue'
+import type { RealDevice } from '@/components/RealDeviceCard.vue'
+import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window'
 
 const { t } = useI18n()
@@ -166,6 +184,8 @@ const showKeywordFilter = ref(false)
 const timeFilterType = ref<'all' | 'recent' | 'since'>('all')
 const recentMinutes = ref(5)
 const sinceTime = ref<number | null>(null)
+const realDevices = ref<RealDevice[]>([])
+const realDevicesLoading = ref(false)
 const logFilter = ref({
   level: 'all',
   keyword: '',
@@ -229,7 +249,11 @@ onMounted(async () => {
   if (!isMacOS.value && activeTab.value === 'ios') {
     activeTab.value = 'android'
   }
-  await handleRefresh()
+  if (activeTab.value === 'realDevice') {
+    await fetchRealDevices()
+  } else {
+    await handleRefresh()
+  }
   window.addEventListener('focus', handleRefresh)
   
   // 禁用触摸板滑动导航
@@ -294,11 +318,31 @@ watch(consolePanelWidth, async (newWidth) => {
 const handleTabChange = async (tab: string) => {
   activeTab.value = tab
   localStorage.setItem('activeTab', tab)
-  await emulatorStore.fetchEmulators(tab as any)
+  if (tab === 'realDevice') {
+    await fetchRealDevices()
+  } else {
+    await emulatorStore.fetchEmulators(tab as any)
+  }
+}
+
+const fetchRealDevices = async () => {
+  realDevicesLoading.value = true
+  try {
+    realDevices.value = await invoke<RealDevice[]>('list_usb_devices')
+  } catch (error) {
+    console.error('Failed to fetch USB devices:', error)
+    realDevices.value = []
+  } finally {
+    realDevicesLoading.value = false
+  }
 }
 
 const handleRefresh = async () => {
-  await emulatorStore.fetchEmulators(activeTab.value as any)
+  if (activeTab.value === 'realDevice') {
+    await fetchRealDevices()
+  } else {
+    await emulatorStore.fetchEmulators(activeTab.value as any)
+  }
 }
 
 const handleStart = async (id: string) => {

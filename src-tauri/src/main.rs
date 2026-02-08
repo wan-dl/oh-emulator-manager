@@ -4,7 +4,7 @@
 mod commands;
 mod db;
 
-use commands::{android, ios, harmony, settings};
+use commands::{android, ios, harmony, settings, usb_device};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{TrayIconBuilder, TrayIconEvent},
@@ -96,6 +96,8 @@ fn main() {
             settings::open_file,
             settings::get_emulator_launch_params,
             settings::save_emulator_launch_params,
+            // USB device commands
+            usb_device::list_usb_devices,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

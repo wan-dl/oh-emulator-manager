@@ -6,7 +6,8 @@
   "tabs": {
     "ios": "iOS",
     "android": "Android",
-    "harmony": "Harmony"
+    "harmony": "Harmony",
+    "realDevice": "Real Devices"
   },
   "actions": {
     "refresh": "Refresh",
@@ -25,7 +26,11 @@
   },
   "status": {
     "running": "Running",
-    "stopped": "Stopped"
+    "stopped": "Stopped",
+    "usbDebugging": "USB Debugging On",
+    "usbDebuggingOff": "USB Debugging Off",
+    "trusted": "Trusted",
+    "untrusted": "Untrusted"
   },
   "settings": {
     "title": "Settings",
@@ -80,5 +85,8 @@
   "dialogs": {
     "deleteTitle": "Confirm Delete",
     "deleteContent": "Are you sure you want to delete emulator '{id}'? This action cannot be undone."
+  },
+  "realDevice": {
+    "noDevices": "No USB devices detected"
   }
 }
