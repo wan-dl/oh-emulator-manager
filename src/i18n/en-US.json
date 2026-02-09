@@ -88,5 +88,22 @@
   },
   "realDevice": {
     "noDevices": "No USB devices detected"
+  },
+  "validation": {
+    "pathRequired": "This path is required",
+    "pathDangerousChars": "Path contains disallowed characters",
+    "pathTraversal": "Path cannot contain '..'",
+    "invalidExtension": "Invalid file extension",
+    "invalidWindowsPath": "Please enter a valid Windows path (e.g. C:\\path)",
+    "invalidUnixPath": "Please enter a valid Unix path (starting with /)",
+    "reservedWindowsName": "Filename is a Windows reserved name",
+    "invalidXcodePath": "Please enter a valid Xcode path",
+    "pathNotExists": "Path does not exist",
+    "selectFolderError": "Failed to select folder",
+    "selectFileError": "Failed to select file",
+    "fixErrorsBeforeSave": "Please fix errors before saving"
+  },
+  "about": {
+    "description": "Cross-platform emulator management tool"
   }
 }

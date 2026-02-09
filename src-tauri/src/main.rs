@@ -94,6 +94,7 @@ fn main() {
             settings::get_settings,
             settings::save_settings,
             settings::open_file,
+            settings::check_path_exists,
             settings::get_emulator_launch_params,
             settings::save_emulator_launch_params,
             // USB device commands

@@ -138,6 +138,16 @@ pub fn get_screenshot_dir() -> Option<String> {
 }
 
 #[tauri::command]
+pub async fn check_path_exists(path: String) -> Result<bool, String> {
+    if path.trim().is_empty() {
+        return Ok(true); // Empty path is considered valid (optional field)
+    }
+    
+    let path_obj = std::path::Path::new(&path);
+    Ok(path_obj.exists())
+}
+
+#[tauri::command]
 pub async fn open_file(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {

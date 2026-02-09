@@ -11,8 +11,8 @@
       </div>
       <div class="header-center">
         <div class="tabs-header">
-          <div 
-            v-for="tab in tabs" 
+          <div
+            v-for="tab in tabs"
             :key="tab.key"
             :class="['tab-item', { active: activeTab === tab.key }]"
             @click="activeTab = tab.key"
@@ -55,9 +55,18 @@
                 </button>
               </div>
             </n-form-item>
-            <n-form-item :label="t('settings.screenshotDir')">
+            <n-form-item
+              :label="t('settings.screenshotDir')"
+              :validation-status="settingsStore.hasError('screenshotDir') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('screenshotDir') ? t(settingsStore.getError('screenshotDir')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.screenshotDir" @blur="handleAutoSave" />
+                <n-input
+                  v-model:value="settingsStore.screenshotDir"
+                  :status="settingsStore.hasError('screenshotDir') ? 'error' : undefined"
+                  @blur="handleFieldBlur('screenshotDir')"
+                  @input="handleFieldInput('screenshotDir')"
+                />
                 <n-button @click="selectScreenshotDir">
                   {{ t('settings.selectFolder') }}
                 </n-button>
@@ -75,9 +84,18 @@
         <!-- Android 设置 -->
         <div v-if="activeTab === 'android'" class="tab-content">
           <n-form label-placement="left" label-width="160">
-            <n-form-item :label="t('settings.androidHome')">
+            <n-form-item
+              :label="t('settings.androidHome')"
+              :validation-status="settingsStore.hasError('androidHome') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('androidHome') ? t(settingsStore.getError('androidHome')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.androidHome" @blur="handleAutoSave" />
+                <n-input
+                  v-model:value="settingsStore.androidHome"
+                  :status="settingsStore.hasError('androidHome') ? 'error' : undefined"
+                  @blur="handleFieldBlur('androidHome')"
+                  @input="handleFieldInput('androidHome')"
+                />
                 <n-button @click="selectAndroidHome">
                   {{ t('settings.selectFolder') }}
                 </n-button>
@@ -94,9 +112,18 @@
         <!-- iOS 设置 -->
         <div v-if="activeTab === 'ios'" class="tab-content">
           <n-form label-placement="left" label-width="160">
-            <n-form-item :label="t('settings.xcodeHome')">
+            <n-form-item
+              :label="t('settings.xcodeHome')"
+              :validation-status="settingsStore.hasError('xcodeHome') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('xcodeHome') ? t(settingsStore.getError('xcodeHome')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.xcodeHome" @blur="handleAutoSave" />
+                <n-input
+                  v-model:value="settingsStore.xcodeHome"
+                  :status="settingsStore.hasError('xcodeHome') ? 'error' : undefined"
+                  @blur="handleFieldBlur('xcodeHome')"
+                  @input="handleFieldInput('xcodeHome')"
+                />
                 <n-button @click="selectXcodeHome">
                   {{ t('settings.selectFolder') }}
                 </n-button>
@@ -108,41 +135,88 @@
         <!-- 鸿蒙设置 -->
         <div v-if="activeTab === 'harmony'" class="tab-content">
           <n-form label-placement="left" label-width="200">
-            <n-form-item :label="t('settings.devecoHome')">
+            <n-form-item
+              :label="t('settings.devecoHome')"
+              :validation-status="settingsStore.hasError('devecoHome') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('devecoHome') ? t(settingsStore.getError('devecoHome')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.devecoHome" @blur="handleAutoSave" />
+                <n-input
+                  v-model:value="settingsStore.devecoHome"
+                  :status="settingsStore.hasError('devecoHome') ? 'error' : undefined"
+                  @blur="handleFieldBlur('devecoHome')"
+                  @input="handleFieldInput('devecoHome')"
+                />
                 <n-button @click="selectDevecoHome">
                   {{ t('settings.selectFolder') }}
                 </n-button>
               </n-input-group>
             </n-form-item>
-            <n-form-item :label="t('settings.harmonyEmulatorPath')">
+            <n-form-item
+              :label="t('settings.harmonyEmulatorPath')"
+              :validation-status="settingsStore.hasError('harmonyEmulatorPath') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('harmonyEmulatorPath') ? t(settingsStore.getError('harmonyEmulatorPath')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.harmonyEmulatorPath" @blur="handleAutoSave" :placeholder="t('settings.harmonyEmulatorPathPlaceholder')" />
+                <n-input
+                  v-model:value="settingsStore.harmonyEmulatorPath"
+                  :status="settingsStore.hasError('harmonyEmulatorPath') ? 'error' : undefined"
+                  :placeholder="t('settings.harmonyEmulatorPathPlaceholder')"
+                  @blur="handleFieldBlur('harmonyEmulatorPath')"
+                  @input="handleFieldInput('harmonyEmulatorPath')"
+                />
                 <n-button @click="selectHarmonyEmulatorPath">
                   {{ t('settings.selectFile') }}
                 </n-button>
               </n-input-group>
             </n-form-item>
-            <n-form-item :label="t('settings.harmonyHdcPath')">
+            <n-form-item
+              :label="t('settings.harmonyHdcPath')"
+              :validation-status="settingsStore.hasError('harmonyHdcPath') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('harmonyHdcPath') ? t(settingsStore.getError('harmonyHdcPath')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.harmonyHdcPath" @blur="handleAutoSave" :placeholder="t('settings.harmonyHdcPathPlaceholder')" />
+                <n-input
+                  v-model:value="settingsStore.harmonyHdcPath"
+                  :status="settingsStore.hasError('harmonyHdcPath') ? 'error' : undefined"
+                  :placeholder="t('settings.harmonyHdcPathPlaceholder')"
+                  @blur="handleFieldBlur('harmonyHdcPath')"
+                  @input="handleFieldInput('harmonyHdcPath')"
+                />
                 <n-button @click="selectHarmonyHdcPath">
                   {{ t('settings.selectFile') }}
                 </n-button>
               </n-input-group>
             </n-form-item>
-            <n-form-item :label="t('settings.harmonyImageLocation')">
+            <n-form-item
+              :label="t('settings.harmonyImageLocation')"
+              :validation-status="settingsStore.hasError('harmonyImageLocation') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('harmonyImageLocation') ? t(settingsStore.getError('harmonyImageLocation')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.harmonyImageLocation" @blur="handleAutoSave" />
+                <n-input
+                  v-model:value="settingsStore.harmonyImageLocation"
+                  :status="settingsStore.hasError('harmonyImageLocation') ? 'error' : undefined"
+                  @blur="handleFieldBlur('harmonyImageLocation')"
+                  @input="handleFieldInput('harmonyImageLocation')"
+                />
                 <n-button @click="selectHarmonyImageLocation">
                   {{ t('settings.selectFolder') }}
                 </n-button>
               </n-input-group>
             </n-form-item>
-            <n-form-item :label="t('settings.harmonyEmulatorLocation')">
+            <n-form-item
+              :label="t('settings.harmonyEmulatorLocation')"
+              :validation-status="settingsStore.hasError('harmonyEmulatorLocation') ? 'error' : undefined"
+              :feedback="settingsStore.hasError('harmonyEmulatorLocation') ? t(settingsStore.getError('harmonyEmulatorLocation')!) : undefined"
+            >
               <n-input-group>
-                <n-input v-model:value="settingsStore.harmonyEmulatorLocation" @blur="handleAutoSave" />
+                <n-input
+                  v-model:value="settingsStore.harmonyEmulatorLocation"
+                  :status="settingsStore.hasError('harmonyEmulatorLocation') ? 'error' : undefined"
+                  @blur="handleFieldBlur('harmonyEmulatorLocation')"
+                  @input="handleFieldInput('harmonyEmulatorLocation')"
+                />
                 <n-button @click="selectHarmonyEmulatorLocation">
                   {{ t('settings.selectFolder') }}
                 </n-button>
@@ -156,7 +230,7 @@
           <div class="about-content">
             <h3>{{ t('app.title') }}</h3>
             <p>{{ t('app.version') }}: 1.0.0</p>
-            <p>跨平台模拟器管理工具</p>
+            <p>{{ t('about.description') }}</p>
           </div>
         </div>
       </div>
@@ -199,6 +273,20 @@ const themeOptions = computed<Array<{label: string, value: 'light' | 'dark' | 's
   { label: t('theme.system'), value: 'system' }
 ])
 
+// Validate field on blur
+const handleFieldBlur = async (field: string) => {
+  await settingsStore.validateField(field)
+  await handleAutoSave()
+}
+
+// Clear error on input (will re-validate on blur)
+const handleFieldInput = (field: string) => {
+  // Clear error immediately when user starts typing
+  if (settingsStore.hasError(field)) {
+    settingsStore.validationErrors[field] = undefined
+  }
+}
+
 const selectXcodeHome = async () => {
   try {
     const selected = await open({
@@ -209,11 +297,12 @@ const selectXcodeHome = async () => {
     })
     if (selected) {
       settingsStore.xcodeHome = selected as string
+      await settingsStore.validateField('xcodeHome')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting folder:', error)
-    message.error('选择文件夹失败: ' + error)
+    message.error(t('validation.selectFolderError'))
   }
 }
 
@@ -227,11 +316,12 @@ const selectScreenshotDir = async () => {
     })
     if (selected) {
       settingsStore.screenshotDir = selected as string
+      await settingsStore.validateField('screenshotDir')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting folder:', error)
-    message.error('选择文件夹失败: ' + error)
+    message.error(t('validation.selectFolderError'))
   }
 }
 
@@ -245,11 +335,12 @@ const selectAndroidHome = async () => {
     })
     if (selected) {
       settingsStore.androidHome = selected as string
+      await settingsStore.validateField('androidHome')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting folder:', error)
-    message.error('选择文件夹失败: ' + error)
+    message.error(t('validation.selectFolderError'))
   }
 }
 
@@ -263,11 +354,12 @@ const selectDevecoHome = async () => {
     })
     if (selected) {
       settingsStore.devecoHome = selected as string
+      await settingsStore.validateField('devecoHome')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting folder:', error)
-    message.error('选择文件夹失败: ' + error)
+    message.error(t('validation.selectFolderError'))
   }
 }
 
@@ -281,11 +373,12 @@ const selectHarmonyImageLocation = async () => {
     })
     if (selected) {
       settingsStore.harmonyImageLocation = selected as string
+      await settingsStore.validateField('harmonyImageLocation')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting folder:', error)
-    message.error('选择文件夹失败: ' + error)
+    message.error(t('validation.selectFolderError'))
   }
 }
 
@@ -299,11 +392,12 @@ const selectHarmonyEmulatorLocation = async () => {
     })
     if (selected) {
       settingsStore.harmonyEmulatorLocation = selected as string
+      await settingsStore.validateField('harmonyEmulatorLocation')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting folder:', error)
-    message.error('选择文件夹失败: ' + error)
+    message.error(t('validation.selectFolderError'))
   }
 }
 
@@ -316,11 +410,12 @@ const selectHarmonyEmulatorPath = async () => {
     })
     if (selected) {
       settingsStore.harmonyEmulatorPath = selected as string
+      await settingsStore.validateField('harmonyEmulatorPath')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting file:', error)
-    message.error('选择文件失败: ' + error)
+    message.error(t('validation.selectFileError'))
   }
 }
 
@@ -333,17 +428,21 @@ const selectHarmonyHdcPath = async () => {
     })
     if (selected) {
       settingsStore.harmonyHdcPath = selected as string
+      await settingsStore.validateField('harmonyHdcPath')
       await handleAutoSave()
     }
   } catch (error) {
     console.error('Error selecting file:', error)
-    message.error('选择文件失败: ' + error)
+    message.error(t('validation.selectFileError'))
   }
 }
 
 const handleAutoSave = async () => {
   try {
-    await settingsStore.saveSettings()
+    const success = await settingsStore.saveSettings()
+    if (!success) {
+      message.warning(t('validation.fixErrorsBeforeSave'))
+    }
   } catch (error) {
     message.error(t('messages.error'))
   }
@@ -540,5 +639,23 @@ const handleAutoSave = async () => {
 :deep(.n-button:not(.n-button--disabled):hover) {
   background-color: #4098fc !important;
   border-color: #4098fc !important;
+}
+
+/* Validation error styles */
+:deep(.n-form-item-feedback-wrapper) {
+  min-height: 22px;
+}
+
+:deep(.n-form-item--error .n-input .n-input__border) {
+  border-color: #d03050 !important;
+}
+
+:deep(.n-form-item--error .n-input:hover .n-input__border) {
+  border-color: #d03050 !important;
+}
+
+:deep(.n-form-item--error .n-input.n-input--focus .n-input__border) {
+  border-color: #d03050 !important;
+  box-shadow: 0 0 0 2px rgba(208, 48, 80, 0.2) !important;
 }
 </style>

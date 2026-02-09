@@ -88,5 +88,22 @@
   },
   "realDevice": {
     "noDevices": "未检测到 USB 设备"
+  },
+  "validation": {
+    "pathRequired": "此路径为必填项",
+    "pathDangerousChars": "路径包含不允许的字符",
+    "pathTraversal": "路径不能包含 '..'",
+    "invalidExtension": "文件扩展名无效",
+    "invalidWindowsPath": "请输入有效的 Windows 路径（如 C:\\path）",
+    "invalidUnixPath": "请输入有效的 Unix 路径（以 / 开头）",
+    "reservedWindowsName": "文件名是 Windows 保留名称",
+    "invalidXcodePath": "请输入有效的 Xcode 路径",
+    "pathNotExists": "路径不存在",
+    "selectFolderError": "选择文件夹失败",
+    "selectFileError": "选择文件失败",
+    "fixErrorsBeforeSave": "请先修正错误后再保存"
+  },
+  "about": {
+    "description": "跨平台模拟器管理工具"
   }
 }

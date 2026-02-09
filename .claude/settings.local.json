@@ -5,7 +5,8 @@
       "Bash(where:*)",
       "Bash(rustup default:*)",
       "Bash(cargo clean:*)",
-      "Bash(pnpm tauri dev:*)"
+      "Bash(pnpm tauri dev:*)",
+      "Bash(pnpm type-check:*)"
     ]
   }
 }
