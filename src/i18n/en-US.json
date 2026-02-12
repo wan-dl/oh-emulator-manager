@@ -78,13 +78,18 @@
     "screenshotSuccess": "Screenshot saved",
     "screenshotSaved": "Screenshot saved to: {path}",
     "copySuccess": "Copied to clipboard",
+    "commandCopied": "Command copied to clipboard",
     "settingsSaved": "Settings saved",
     "stopTimeout": "Stop timed out, please check emulator status manually",
     "error": "Operation failed"
   },
   "dialogs": {
-    "deleteTitle": "Confirm Delete",
-    "deleteContent": "Are you sure you want to delete emulator '{id}'? This action cannot be undone."
+    "deleteTitle": "Delete Emulator",
+    "deleteContent": "Are you sure you want to delete emulator '{id}'? This action cannot be undone.",
+    "deleteManualCommand": "Please manually execute the following command in terminal to delete the emulator",
+    "harmonyDeleteNotSupported": "HarmonyOS emulator deletion is not supported yet. Please delete it manually in DevEco Studio.",
+    "copyCommand": "Copy Command",
+    "close": "Close"
   },
   "realDevice": {
     "noDevices": "No USB devices detected"

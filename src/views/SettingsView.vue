@@ -43,7 +43,7 @@
                 </button>
               </div>
             </n-form-item>
-            <n-form-item :label="t('settings.theme')">
+            <!-- <n-form-item :label="t('settings.theme')">
               <div class="button-group">
                 <button
                   v-for="option in themeOptions"
@@ -54,7 +54,7 @@
                   {{ option.label }}
                 </button>
               </div>
-            </n-form-item>
+            </n-form-item> -->
             <n-form-item
               :label="t('settings.screenshotDir')"
               :validation-status="settingsStore.hasError('screenshotDir') ? 'error' : undefined"
@@ -267,11 +267,12 @@ const languageOptions: Array<{label: string, value: 'zh-CN' | 'en-US'}> = [
   { label: 'English', value: 'en-US' }
 ]
 
-const themeOptions = computed<Array<{label: string, value: 'light' | 'dark' | 'system'}>>(() => [
-  { label: t('theme.light'), value: 'light' },
-  { label: t('theme.dark'), value: 'dark' },
-  { label: t('theme.system'), value: 'system' }
-])
+// const themeOptions = computed<Array<{label: string, value: 'light' | 'dark' | 'system'}>>(() => [
+//   { label: t('theme.light'), value: 'light' },
+//   { label: t('theme.dark'), value: 'dark' },
+//   { label: t('theme.system'), value: 'system' }
+// ])
+
 
 // Validate field on blur
 const handleFieldBlur = async (field: string) => {
@@ -657,5 +658,48 @@ const handleAutoSave = async () => {
 :deep(.n-form-item--error .n-input.n-input--focus .n-input__border) {
   border-color: #d03050 !important;
   box-shadow: 0 0 0 2px rgba(208, 48, 80, 0.2) !important;
+}
+
+/* Dark mode styles */
+html.dark .header {
+  border-bottom-color: #333;
+}
+
+html.dark .tabs-header {
+  background: #2a2a2a;
+}
+
+html.dark .tab-item {
+  color: #aaa;
+}
+
+html.dark .tab-item.active {
+  background: #1a1a1a;
+  color: #2080f0;
+}
+
+html.dark .button-group {
+  background: #2a2a2a;
+}
+
+html.dark .option-button {
+  color: #aaa;
+}
+
+html.dark .option-button.active {
+  background: #1a1a1a;
+  color: #2080f0;
+}
+
+html.dark .about-content p {
+  color: #aaa;
+}
+
+html.dark .actions {
+  border-top-color: #333;
+}
+
+html.dark :deep(.n-form-item-label) {
+  color: #ddd !important;
 }
 </style>

@@ -16,6 +16,9 @@
             <template v-if="emulator.osVersion">
               · {{ emulator.osVersion }}
             </template>
+            <template v-if="emulator.id">
+              · {{ emulator.id }}
+            </template>
           </template>
         </div>
       </div>

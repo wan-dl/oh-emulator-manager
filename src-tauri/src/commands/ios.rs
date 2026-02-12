@@ -50,10 +50,15 @@ pub async fn list_ios_simulators() -> Result<Vec<IOSSimulator>, String> {
                                 "stopped"
                             };
 
+                            let device_type = device["deviceTypeIdentifier"]
+                                .as_str()
+                                .unwrap_or(name)
+                                .replace("com.apple.CoreSimulator.SimDeviceType.", "");
+
                             simulators.push(IOSSimulator {
                                 id: udid.to_string(),
                                 name: name.to_string(),
-                                device_type: name.to_string(),
+                                device_type: device_type,
                                 os_version: runtime.replace("com.apple.CoreSimulator.SimRuntime.", ""),
                                 status: status.to_string(),
                             });

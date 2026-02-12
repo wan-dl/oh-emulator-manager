@@ -149,13 +149,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, h } from 'vue'
 import { NButton, NInput, NIcon, useMessage, useDialog } from 'naive-ui'
 import { Refresh } from '@vicons/ionicons5'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useEmulatorStore } from '@/stores/emulator'
 import { useLogsStore } from '@/stores/logs'
+import { useSettingsStore } from '@/stores/settings'
 import EmulatorList from '@/components/EmulatorList.vue'
 import AppLogPanel from '@/components/AppLogPanel.vue'
 import DeviceLogPanel from '@/components/DeviceLogPanel.vue'
@@ -170,6 +171,7 @@ const message = useMessage()
 const dialog = useDialog()
 const emulatorStore = useEmulatorStore()
 const logsStore = useLogsStore()
+const settingsStore = useSettingsStore()
 
 const isMacOS = ref(false)
 const activeTab = ref(localStorage.getItem('activeTab') || 'android')
@@ -450,32 +452,49 @@ const handleStop = async (id: string) => {
 }
 
 const handleDelete = async (id: string) => {
-  // delete 需要 AVD 名称，运行中的模拟器 id 是 serial (emulator-5554)
   const emulator = filteredEmulators.value.find(e => e.id === id)
   const avdName = emulator?.name || id
-  dialog.warning({
+  const type = activeTab.value
+  
+  let deleteCommand = ''
+  
+  if (type === 'ios') {
+    deleteCommand = `xcrun simctl delete ${id}`
+  } else if (type === 'android') {
+    const androidHome = settingsStore.androidHome || '$ANDROID_HOME'
+    const avdmanager = navigator.platform.toLowerCase().includes('win') 
+      ? 'avdmanager.bat' 
+      : 'avdmanager'
+    deleteCommand = `${androidHome}/cmdline-tools/latest/bin/${avdmanager} delete avd -n ${avdName}`
+  } else if (type === 'harmony') {
+    deleteCommand = t('dialogs.harmonyDeleteNotSupported')
+  }
+  
+  dialog.info({
     title: t('dialogs.deleteTitle'),
-    content: t('dialogs.deleteContent', { id: avdName }),
-    positiveText: t('actions.delete'),
-    negativeText: t('settings.cancel'),
+    content: () => type === 'harmony' 
+      ? h('div', deleteCommand)
+      : h('div', [
+          h('p', { style: 'margin-bottom: 12px' }, t('dialogs.deleteManualCommand')),
+          h('code', { 
+            style: 'display: block; padding: 12px; background: #f5f5f5; border-radius: 6px; word-break: break-all; font-family: monospace; font-size: 13px' 
+          }, deleteCommand)
+        ]),
+    positiveText: type === 'harmony' ? t('dialogs.close') : t('dialogs.copyCommand'),
+    negativeText: type === 'harmony' ? undefined : t('dialogs.close'),
     style: {
       borderRadius: '12px'
     },
     positiveButtonProps: {
-      type: 'error',
-      ghost: false
+      type: type === 'harmony' ? 'primary' : 'primary'
     },
     negativeButtonProps: {
       quaternary: true
     },
-    onPositiveClick: async () => {
-      try {
-        await emulatorStore.deleteEmulator(avdName)
-        message.success(t('messages.deleteSuccess'))
-        await handleRefresh()
-      } catch (error) {
-        const errorMsg = typeof error === 'string' ? error : (error instanceof Error ? error.message : JSON.stringify(error))
-        message.error(errorMsg)
+    onPositiveClick: () => {
+      if (type !== 'harmony') {
+        navigator.clipboard.writeText(deleteCommand)
+        message.success(t('messages.commandCopied'))
       }
     }
   })

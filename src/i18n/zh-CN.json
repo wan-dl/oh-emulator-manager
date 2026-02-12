@@ -78,13 +78,18 @@
     "screenshotSuccess": "截图已保存",
     "screenshotSaved": "截图已保存到: {path}",
     "copySuccess": "已复制到剪贴板",
+    "commandCopied": "命令已复制到剪贴板",
     "settingsSaved": "设置已保存",
     "stopTimeout": "关闭超时，请手动检查模拟器状态",
     "error": "操作失败"
   },
   "dialogs": {
-    "deleteTitle": "确认删除",
-    "deleteContent": "确定要删除模拟器 '{id}' 吗？此操作不可恢复。"
+    "deleteTitle": "删除模拟器",
+    "deleteContent": "确定要删除模拟器 '{id}' 吗？此操作不可恢复。",
+    "deleteManualCommand": "请在终端手动执行以下命令删除模拟器",
+    "harmonyDeleteNotSupported": "鸿蒙模拟器暂不支持删除功能，请手动在 DevEco Studio 中删除。",
+    "copyCommand": "复制命令",
+    "close": "关闭"
   },
   "realDevice": {
     "noDevices": "未检测到 USB 设备"

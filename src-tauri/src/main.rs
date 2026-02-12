@@ -55,11 +55,21 @@ fn main() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // 读取设置，判断是否最小化到托盘
-                if let Ok(s) = settings::load_settings() {
-                    if s.minimize_to_tray {
-                        api.prevent_close();
-                        let _ = window.hide();
+                // macOS 上点击关闭按钮时隐藏窗口而不是退出
+                #[cfg(target_os = "macos")]
+                {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+                
+                // 其他平台根据设置决定
+                #[cfg(not(target_os = "macos"))]
+                {
+                    if let Ok(s) = settings::load_settings() {
+                        if s.minimize_to_tray {
+                            api.prevent_close();
+                            let _ = window.hide();
+                        }
                     }
                 }
             }
@@ -100,6 +110,16 @@ fn main() {
             // USB device commands
             usb_device::list_usb_devices,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // macOS: 点击 Dock 图标时显示窗口
+            if let tauri::RunEvent::Reopen { .. } = event {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }
+        });
 }
